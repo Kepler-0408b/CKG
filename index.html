@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Knowledge Graph trong CTI | Báo cáo thu hoạch của Tạ Quang Vinh</title>
+<meta name="description" content="Giới thiệu báo cáo thu hoạch: Knowledge Graph trong Cyber Threat Intelligence và hướng nghiên cứu Windows Malware Loader.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ================= TOKENS ================= */
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#EEF2F8; --bg2:#E2E8F3; --surface:rgba(255,255,255,.78); --surface-solid:#FFFFFF;
+  --ink:#0C1533; --ink2:#37446B; --mute:#67739A; --line:rgba(12,21,51,.13); --line2:rgba(12,21,51,.24);
+  --accent:#B86A00; --accent2:#0A6FB8; --on-accent:#FFFFFF;
+  --e-actor:#D02F48; --e-mal:#C2610A; --e-tech:#0A78C2; --e-ioc:#0F9566; --e-vuln:#6F3FD0; --e-target:#8A6A1E; --e-tele:#56627F; --e-def:#2B8A3E;
+  --shadow:0 30px 60px -30px rgba(12,21,51,.35);
+  --glow:0;
+  --f-d:'Bricolage Grotesque','Be Vietnam Pro',system-ui,sans-serif;
+  --f-b:'Be Vietnam Pro',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --f-m:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  --ease:cubic-bezier(.2,.8,.1,1);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0A1130; --bg2:#101942; --surface:rgba(20,30,72,.62); --surface-solid:#131D4A;
+    --ink:#EEF2FF; --ink2:#B7C2E6; --mute:#7F8BB5; --line:rgba(160,180,255,.15); --line2:rgba(160,180,255,.3);
+    --accent:#FFB020; --accent2:#3EC6FF; --on-accent:#0A1130;
+    --e-actor:#FF5D73; --e-mal:#FF9F43; --e-tech:#3EC6FF; --e-ioc:#5EF2B0; --e-vuln:#B48CFF; --e-target:#E8D08A; --e-tele:#9AA8D6; --e-def:#7BE08A;
+    --shadow:0 40px 80px -30px rgba(0,0,0,.7); --glow:1;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0A1130; --bg2:#101942; --surface:rgba(20,30,72,.62); --surface-solid:#131D4A;
+  --ink:#EEF2FF; --ink2:#B7C2E6; --mute:#7F8BB5; --line:rgba(160,180,255,.15); --line2:rgba(160,180,255,.3);
+  --accent:#FFB020; --accent2:#3EC6FF; --on-accent:#0A1130;
+  --e-actor:#FF5D73; --e-mal:#FF9F43; --e-tech:#3EC6FF; --e-ioc:#5EF2B0; --e-vuln:#B48CFF; --e-target:#E8D08A; --e-tele:#9AA8D6; --e-def:#7BE08A;
+  --shadow:0 40px 80px -30px rgba(0,0,0,.7); --glow:1;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-b);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden;transition:background .5s,color .5s}
+img,svg,canvas{max-width:100%}
+a{color:inherit}
+::selection{background:var(--accent);color:var(--on-accent)}
+.wrap{width:min(1200px,100% - 2*clamp(18px,5vw,64px));margin-inline:auto}
+section{position:relative}
+h1,h2,h3,h4{font-family:var(--f-d);margin:0;line-height:1.02;letter-spacing:-.02em}
+h2.big{font-size:clamp(40px,7vw,104px);font-weight:800;letter-spacing:-.04em}
+h3{font-size:clamp(20px,2vw,26px);font-weight:600;letter-spacing:-.01em}
+p{margin:0 0 14px;color:var(--ink2)}
+strong{color:var(--ink);font-weight:600}
+.lede{font-size:clamp(18px,1.6vw,21px);max-width:62ch;color:var(--ink2)}
+.sec{padding:clamp(90px,14vh,170px) 0}
+.sec-head{display:grid;grid-template-columns:minmax(0,1fr);gap:22px;margin-bottom:clamp(40px,6vw,72px)}
+.sec-head .idx{font-family:var(--f-d);font-weight:600;font-size:15px;color:var(--accent);display:flex;align-items:center;gap:12px}
+.sec-head .idx::after{content:"";height:1px;width:64px;background:var(--accent)}
+.note{font-size:14px;color:var(--mute)}
+.chip{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:500;padding:6px 12px;border:1px solid var(--line2);border-radius:999px;color:var(--ink2);background:var(--surface)}
+.chip i{width:10px;height:10px;border-radius:50%;display:inline-block}
+
+/* ================= CURSOR ================= */
+.cur-dot,.cur-ring{position:fixed;left:0;top:0;pointer-events:none;z-index:9999;border-radius:50%;transform:translate(-50%,-50%)}
+.cur-dot{width:7px;height:7px;background:var(--accent)}
+.cur-ring{width:36px;height:36px;border:1.5px solid var(--accent);transition:width .25s var(--ease),height .25s var(--ease),background .25s,border-color .25s}
+.cur-ring.hot{width:64px;height:64px;background:color-mix(in srgb,var(--accent) 14%,transparent);border-color:transparent}
+@media (hover:hover) and (pointer:fine){ :root:not(.rm) body.has-cursor, :root:not(.rm) body.has-cursor a, :root:not(.rm) body.has-cursor button{cursor:none} }
+@media (hover:none),(pointer:coarse){.cur-dot,.cur-ring{display:none}}
+
+/* ================= LOADER ================= */
+#pageLoader{position:fixed;inset:0;z-index:10000;background:var(--bg);display:grid;place-items:center;transition:transform 1s var(--ease),opacity .6s}
+#pageLoader.done{transform:translateY(-100%)}
+.ld{display:grid;justify-items:center;gap:22px;text-align:center;padding:24px}
+.ld svg{width:min(260px,60vw);height:auto;overflow:visible}
+.ld line{stroke:var(--accent2);stroke-width:1.6;stroke-dasharray:120;stroke-dashoffset:120;animation:draw .9s var(--ease) forwards}
+.ld circle{fill:var(--bg);stroke-width:2.5;transform-box:fill-box;transform-origin:center;transform:scale(0);animation:pop .5s var(--ease) forwards}
+.ld .pct{font-family:var(--f-d);font-weight:800;font-size:clamp(46px,8vw,84px);letter-spacing:-.04em;line-height:1}
+.ld .trip{font-family:var(--f-m);font-size:13.5px;color:var(--mute);min-height:1.5em}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes pop{to{transform:scale(1)}}
+
+/* ================= TOPBAR ================= */
+.top{position:fixed;inset:0 0 auto 0;z-index:50;padding-top:env(safe-area-inset-top,0px);transition:background .4s,backdrop-filter .4s,border-color .4s;border-bottom:1px solid transparent}
+.top.scrolled{background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-color:var(--line)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:64px;gap:16px}
+.brand{font-family:var(--f-d);font-weight:800;font-size:18px;letter-spacing:-.02em;display:flex;align-items:center;gap:10px;text-decoration:none}
+.brand svg{width:26px;height:26px}
+.top nav{display:flex;gap:6px;align-items:center}
+.top nav a{font-size:14.5px;text-decoration:none;color:var(--ink2);padding:8px 12px;border-radius:999px;transition:color .2s,background .2s}
+.top nav a:hover{color:var(--ink);background:var(--surface)}
+.iconbtn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line2);background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.iconbtn svg{width:18px;height:18px}
+.progress{position:absolute;left:0;bottom:-1px;height:2px;background:linear-gradient(90deg,var(--accent2),var(--accent));transform-origin:left;transform:scaleX(0)}
+@media (max-width:980px){.top nav .navlinks{display:none}}
+
+/* ================= BUTTONS ================= */
+.btn{--mx:0px;--my:0px;position:relative;display:inline-flex;align-items:center;gap:10px;font:600 16px var(--f-b);text-decoration:none;padding:16px 26px;border-radius:999px;border:1.5px solid var(--ink);color:var(--ink);background:transparent;cursor:pointer;transform:translate(var(--mx),var(--my));transition:transform .35s var(--ease),background .25s,color .25s;overflow:hidden;isolation:isolate}
+.btn::before{content:"";position:absolute;inset:0;background:var(--ink);transform:translateY(101%);transition:transform .45s var(--ease);z-index:-1;border-radius:inherit}
+.btn:hover::before{transform:none}
+.btn:hover{color:var(--bg)}
+.btn.solid{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.solid::before{background:var(--ink)}
+.btn .lbl{display:inline-block;transform:translate(calc(var(--mx)*.35),calc(var(--my)*.35));transition:transform .35s var(--ease)}
+
+/* ================= HERO ================= */
+.hero{min-height:100vh;min-height:100svh;display:flex;align-items:flex-end;padding:120px 0 clamp(40px,8vh,90px);overflow:hidden}
+#heroCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hero::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(90% 70% at 20% 85%, var(--bg) 0%, transparent 60%)}
+.hero .wrap{position:relative;z-index:2}
+.hero .meta{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:28px}
+.hero h1{font-size:clamp(56px,13.2vw,220px);font-weight:800;letter-spacing:-.055em;line-height:.84;margin-left:-.04em}
+.hero h1 .row{display:block;white-space:nowrap}
+.hero h1 .ch{display:inline-block;opacity:0;transform:translateY(.45em) rotate(6deg);filter:blur(8px)}
+.hero h1.go .ch{animation:chIn .9s var(--ease) forwards;animation-delay:calc(var(--i) * 45ms)}
+.hero h1 .row2{color:transparent;-webkit-text-stroke:2px var(--ink)}
+@keyframes chIn{to{opacity:1;transform:none;filter:none}}
+.hero .sub{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:clamp(24px,5vw,80px);align-items:end;margin-top:clamp(26px,4vw,46px)}
+.hero .sub p{font-size:clamp(18px,1.7vw,23px);color:var(--ink2);max-width:36ch;margin:0}
+.hero .ctas{display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end}
+.hero .fade{opacity:0;transform:translateY(16px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+.hero.ready .fade{opacity:1;transform:none}
+.hero.ready .fade.d2{transition-delay:.25s}.hero.ready .fade.d3{transition-delay:.45s}
+.hint{position:absolute;right:clamp(18px,5vw,64px);top:110px;z-index:2;font-size:13px;color:var(--mute);max-width:200px;text-align:right}
+@media (max-width:820px){.hero h1{font-size:15.5vw}.hero .sub{grid-template-columns:minmax(0,1fr)}.hero .ctas{justify-content:flex-start}.hint{display:none}.hero h1 .row2{-webkit-text-stroke:1.4px var(--ink)}}
+
+/* ================= MARQUEE ================= */
+.marq{position:relative;height:clamp(170px,22vw,260px);overflow:hidden;margin:-10px 0}
+.band{position:absolute;left:-5%;width:110%;padding:16px 0;display:flex;overflow:hidden;white-space:nowrap}
+.band.b1{top:22%;background:var(--accent);color:var(--on-accent);transform:rotate(-3.2deg);z-index:2}
+.band.b2{top:30%;background:var(--ink);color:var(--bg);transform:rotate(2.6deg)}
+.band .track{display:flex;flex-shrink:0;animation:mq 38s linear infinite;font-family:var(--f-d);font-weight:800;font-size:clamp(22px,3vw,40px);letter-spacing:-.02em}
+.band.b2 .track{animation-direction:reverse;animation-duration:46s}
+.band .track span{padding:0 22px;display:inline-flex;align-items:center;gap:22px}
+.band .track span::after{content:"";width:12px;height:12px;border-radius:50%;border:3px solid currentColor}
+@keyframes mq{to{transform:translateX(-100%)}}
+
+/* ================= MANIFESTO ================= */
+.manifesto{padding:clamp(110px,18vh,220px) 0}
+.manifesto p{font-family:var(--f-d);font-weight:600;font-size:clamp(28px,4.4vw,64px);line-height:1.12;letter-spacing:-.03em;color:var(--ink);margin:0;max-width:20ch}
+.manifesto .w{opacity:.14;transition:opacity .3s}
+.manifesto .w.hl{color:var(--accent)}
+.manifesto .by{margin-top:36px;font-size:15px;color:var(--mute);font-family:var(--f-b)}
+
+/* ================= STATS ================= */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line2)}
+.stat{padding:30px 22px 26px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.stat + .stat{padding-left:22px;border-left:1px solid var(--line)}
+.stat:nth-child(4n+1){border-left:0;padding-left:0}
+.stat .num{font-family:var(--f-d);font-weight:800;font-size:clamp(46px,5.6vw,84px);letter-spacing:-.05em;line-height:.9;color:var(--ink)}
+.stat .num small{font-size:.45em;letter-spacing:-.02em;margin-left:4px;color:var(--accent)}
+.stat .what{font-weight:600;color:var(--ink);font-size:15.5px}
+.stat .src{font-size:13px;color:var(--mute)}
+@media (max-width:900px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat:nth-child(odd){border-left:0;padding-left:0}.stat:nth-child(even){padding-left:18px;border-left:1px solid var(--line)}}
+
+/* ================= FOUNDATION ================= */
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(30px,5vw,80px);align-items:start}
+@media (max-width:900px){.two{grid-template-columns:minmax(0,1fr)}}
+.formula{font-family:var(--f-d);font-weight:800;font-size:clamp(30px,4vw,56px);letter-spacing:-.03em;line-height:1;padding:28px 0;border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);margin:8px 0 22px;display:flex;flex-wrap:wrap;gap:.3em}
+.formula span:nth-child(1){color:var(--e-actor)}.formula span:nth-child(2){color:var(--accent)}.formula span:nth-child(3){color:var(--e-tech)}
+.builder{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:clamp(20px,3vw,32px);box-shadow:var(--shadow)}
+.builder h3{margin-bottom:6px}
+.builder .row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0 14px}
+.builder label{font-size:13px;color:var(--mute);display:grid;gap:6px}
+.builder select{font:500 15px var(--f-b);color:var(--ink);background:var(--surface-solid);border:1px solid var(--line2);border-radius:12px;padding:11px 10px;width:100%}
+@media (max-width:560px){.builder .row{grid-template-columns:minmax(0,1fr)}}
+.verdict{border-radius:14px;padding:14px 16px;font-size:15px;min-height:76px;border:1px dashed var(--line2);color:var(--ink2);transition:background .3s,border-color .3s}
+.verdict.ok{border-style:solid;border-color:var(--e-ioc);background:color-mix(in srgb,var(--e-ioc) 12%,transparent)}
+.verdict.bad{border-style:solid;border-color:var(--e-actor);background:color-mix(in srgb,var(--e-actor) 10%,transparent)}
+.verdict b{font-family:var(--f-d);font-size:17px;display:block;color:var(--ink);margin-bottom:2px}
+.minigraph{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;min-height:34px}
+.minigraph .t{font-family:var(--f-m);font-size:12.5px;padding:5px 10px;border-radius:8px;background:var(--bg2);color:var(--ink2);animation:pop .4s var(--ease)}
+
+.cmp{width:100%;border-collapse:collapse;font-size:15px}
+.cmp th,.cmp td{padding:13px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+.cmp th{font-family:var(--f-d);font-weight:600;font-size:14px;color:var(--mute)}
+.cmp td:first-child{font-weight:600;color:var(--ink)} .cmp td{color:var(--ink2)}
+.cmp td:last-child{color:var(--ink)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:18px;background:var(--surface)}
+.tablewrap .cmp{min-width:560px}
+.tablewrap .cmp tr:last-child td{border-bottom:0}
+
+.pyr{display:grid;gap:6px;margin:10px 0 0}
+.pyr div{margin-inline:auto;text-align:center;padding:10px 12px;border-radius:6px;font-weight:600;font-size:14.5px;color:var(--on-accent);display:flex;justify-content:space-between;gap:12px}
+.pyr div span:last-child{font-weight:400;opacity:.85}
+.pyr-legend{display:flex;justify-content:space-between;font-size:13px;color:var(--mute);margin-top:8px}
+
+/* entity cards / tilt */
+.ent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.tilt{transform-style:preserve-3d;transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .5s var(--ease)}
+.tilt.active{transition:transform .08s linear}
+.tilt .shine{position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(400px circle at var(--gx,50%) var(--gy,50%),color-mix(in srgb,var(--accent2) 18%,transparent),transparent 45%);opacity:0;transition:opacity .3s}
+.tilt:hover .shine{opacity:1}
+.ent{position:relative;border:1px solid var(--line);border-radius:18px;padding:20px;background:var(--surface)}
+.ent .dot{width:16px;height:16px;border-radius:50%;margin-bottom:16px;box-shadow:0 0 0 5px color-mix(in srgb,currentColor 18%,transparent)}
+.ent h4{font-size:19px;font-weight:600;margin-bottom:6px;letter-spacing:-.01em}
+.ent p{font-size:14.5px;margin:0}
+.ent code{font-family:var(--f-m);font-size:12.5px;color:var(--mute);display:block;margin-top:10px}
+
+.std-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:22px}
+@media (max-width:900px){.std-grid{grid-template-columns:minmax(0,1fr)}}
+.std{position:relative;border-radius:24px;padding:28px;min-height:300px;display:flex;flex-direction:column;justify-content:space-between;color:var(--on-accent);overflow:hidden}
+.std h3{font-size:clamp(28px,3vw,40px);font-weight:800;letter-spacing:-.03em;margin-bottom:12px}
+.std p{color:inherit;opacity:.88;font-size:15px}
+.std .role{font-family:var(--f-d);font-weight:600;font-size:15px;opacity:.75}
+.std.s1{background:var(--ink);color:var(--bg)}
+.std.s2{background:var(--accent2)}
+.std.s3{background:var(--e-def)}
+.std svg{position:absolute;right:-30px;top:-30px;width:180px;opacity:.18}
+
+/* ================= HORIZONTAL ================= */
+.hz{position:relative}
+.hz-sticky{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;display:flex;flex-direction:column;justify-content:center}
+.hz-head{padding:0 clamp(18px,5vw,64px);margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.hz-head h2{font-size:clamp(34px,5.4vw,80px);font-weight:800;letter-spacing:-.045em}
+.hz-head .count{font-family:var(--f-d);font-weight:600;color:var(--mute)}
+.hz-track{display:flex;gap:18px;padding:0 clamp(18px,5vw,64px);will-change:transform}
+.step{position:relative;flex:0 0 clamp(280px,32vw,420px);min-height:clamp(340px,48vh,440px);border-radius:24px;border:1px solid var(--line);background:var(--surface);padding:26px;display:flex;flex-direction:column}
+.step .n{font-family:var(--f-d);font-weight:800;font-size:clamp(64px,8vw,110px);line-height:.8;letter-spacing:-.06em;color:transparent;-webkit-text-stroke:2px var(--accent2);margin-bottom:auto;transition:color .5s,-webkit-text-stroke-color .5s,transform .5s var(--ease);transform-origin:left bottom}
+.step.past .n{-webkit-text-stroke-color:var(--accent)}
+.step.on .n{color:var(--accent);-webkit-text-stroke-color:var(--accent);transform:scale(1.06)}
+.step.on{border-color:color-mix(in srgb,var(--accent) 60%,transparent)}
+.step h3{margin:20px 0 10px}
+.step p{font-size:15px}
+.step .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.step .tags span{font-size:12.5px;padding:4px 9px;border-radius:999px;background:var(--bg2);color:var(--ink2)}
+.hz-bar{margin:28px clamp(18px,5vw,64px) 0;height:2px;background:var(--line)}
+.hz-bar i{display:block;height:100%;background:var(--accent);transform-origin:left;transform:scaleX(0)}
+
+/* ================= STORY ================= */
+.story{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(24px,5vw,70px)}
+.story-steps .st{min-height:80vh;display:flex;flex-direction:column;justify-content:center;opacity:.25;transition:opacity .5s}
+.story-steps .st.on{opacity:1}
+.story-steps .st .k{font-family:var(--f-d);font-weight:600;color:var(--accent);margin-bottom:10px}
+.story-steps .st h3{font-size:clamp(26px,3vw,40px);font-weight:800;letter-spacing:-.03em;margin-bottom:14px}
+.story-vis{position:sticky;top:12vh;height:76vh;border-radius:28px;border:1px solid var(--line);background:var(--surface);overflow:hidden;align-self:start}
+.story-vis svg{width:100%;height:100%;display:block}
+.sv-sent{font-family:var(--f-b);font-size:19px;fill:var(--ink2)}
+.sv-sent tspan.e{transition:fill .5s}
+.story-vis[data-s="1"] .e1, .story-vis[data-s]:not([data-s="0"]) .e1{fill:var(--e-actor);font-weight:700}
+.story-vis[data-s]:not([data-s="0"]) .e2{fill:var(--e-mal);font-weight:700}
+.story-vis[data-s]:not([data-s="0"]) .e3{fill:var(--e-tech);font-weight:700}
+.story-vis[data-s]:not([data-s="0"]) .e4{fill:var(--e-ioc);font-weight:700}
+.sv-layer{opacity:0;transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.story-vis[data-s="2"] .L2,.story-vis[data-s="3"] .L3,.story-vis[data-s="4"] .L3,.story-vis[data-s="5"] .L3,
+.story-vis[data-s="4"] .L4,.story-vis[data-s="5"] .L4,.story-vis[data-s="5"] .L5{opacity:1}
+.story-vis[data-s="3"] .L2,.story-vis[data-s="4"] .L2,.story-vis[data-s="5"] .L2{opacity:0}
+.story-vis .sent-g{transition:transform .8s var(--ease),opacity .6s}
+.story-vis[data-s="3"] .sent-g,.story-vis[data-s="4"] .sent-g,.story-vis[data-s="5"] .sent-g{opacity:.25}
+.sv-edge{stroke:var(--line2);stroke-width:2;fill:none;stroke-dasharray:400;stroke-dashoffset:400;transition:stroke-dashoffset 1.2s var(--ease)}
+.story-vis[data-s="3"] .sv-edge,.story-vis[data-s="4"] .sv-edge,.story-vis[data-s="5"] .sv-edge{stroke-dashoffset:0}
+.sv-pred{stroke:var(--e-vuln);stroke-width:2.5;fill:none;stroke-dasharray:8 7;animation:dash 1.2s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-30}}
+.sv-node circle{stroke-width:3;fill:var(--surface-solid)}
+.sv-node text{font-family:var(--f-b);font-weight:600;font-size:15px;fill:var(--ink);text-anchor:middle}
+.sv-lbl{font-family:var(--f-b);font-size:13px;fill:var(--mute);text-anchor:middle}
+.sv-trip{font-family:var(--f-m);font-size:15px;fill:var(--ink)}
+.sv-badge rect{fill:var(--accent2)} .sv-badge text{fill:#fff;font-family:var(--f-d);font-weight:600;font-size:14px;text-anchor:middle}
+@media (max-width:900px){
+  .story{grid-template-columns:minmax(0,1fr)}
+  .story-vis{order:-1;top:70px;height:44vh;z-index:2;background:var(--surface-solid)}
+  .story-steps .st{min-height:95vh;justify-content:flex-end;padding-bottom:8vh}
+}
+
+/* ================= METHODS ================= */
+.m-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.m-tabs button{font:600 15px var(--f-b);padding:12px 18px;border-radius:999px;border:1px solid var(--line2);background:transparent;color:var(--ink2);cursor:pointer;transition:all .25s}
+.m-tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.m-panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:16px}
+.m-panel > div{border-top:2px solid var(--line2);padding-top:14px}
+.m-panel h4{font-family:var(--f-d);font-weight:600;font-size:14px;color:var(--mute);margin-bottom:8px;letter-spacing:0}
+.m-panel p{color:var(--ink);font-size:16px}
+@media (max-width:820px){.m-panel{grid-template-columns:minmax(0,1fr)}}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:20px}
+.metrics div{border-radius:18px;background:var(--surface);border:1px solid var(--line);padding:18px}
+.metrics b{font-family:var(--f-d);font-weight:800;font-size:clamp(28px,3.4vw,44px);letter-spacing:-.04em;display:block;line-height:1}
+.metrics span{font-size:13.5px;color:var(--mute)}
+@media (max-width:700px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ================= LAB (main interactive) ================= */
+.lab{background:var(--bg2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.lab-ui{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:18px}
+@media (max-width:980px){.lab-ui{grid-template-columns:minmax(0,1fr)}}
+.lab-stage{position:relative;border-radius:26px;border:1px solid var(--line);background:var(--bg);overflow:hidden;min-height:640px;box-shadow:var(--shadow)}
+#labCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.lab-toolbar{position:absolute;left:14px;right:14px;top:14px;display:flex;flex-wrap:wrap;gap:8px;z-index:2;pointer-events:none}
+.lab-toolbar > *{pointer-events:auto}
+.tbtn{font:600 14px var(--f-b);padding:10px 14px;border-radius:999px;border:1px solid var(--line2);background:var(--surface);backdrop-filter:blur(8px);color:var(--ink);cursor:pointer;display:inline-flex;gap:8px;align-items:center}
+.tbtn[disabled]{opacity:.4;cursor:not-allowed}
+.tbtn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.lab-foot{position:absolute;left:14px;right:14px;bottom:14px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;z-index:2;pointer-events:none;flex-wrap:wrap}
+.lab-legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12.5px;color:var(--ink2);background:var(--surface);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.lab-legend span{display:inline-flex;align-items:center;gap:6px}
+.lab-legend i{width:9px;height:9px;border-radius:50%}
+.lab-prog{font-family:var(--f-d);font-weight:600;font-size:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 12px;backdrop-filter:blur(8px)}
+.lab-side{display:flex;flex-direction:column;gap:14px}
+.card{border-radius:22px;border:1px solid var(--line);background:var(--surface);padding:20px}
+.card h4{font-family:var(--f-d);font-size:14px;font-weight:600;color:var(--mute);margin-bottom:10px;letter-spacing:0}
+#inspect .type{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--bg2)}
+#inspect .type i{width:9px;height:9px;border-radius:50%}
+#inspect h3{margin:10px 0 8px;word-break:break-word}
+#inspect p{font-size:15px}
+#inspect dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13.5px;margin:10px 0 0}
+#inspect dt{color:var(--mute)} #inspect dd{margin:0;color:var(--ink)}
+.hyps{list-style:none;padding:0;margin:0;display:grid;gap:10px;max-height:320px;overflow:auto}
+.hyps li{border-left:3px solid var(--accent);padding:6px 0 6px 12px;font-size:14.5px;color:var(--ink2);animation:slideIn .5s var(--ease)}
+.hyps li b{display:block;color:var(--ink);font-weight:600}
+.hyps .empty{border-left-color:var(--line2);color:var(--mute)}
+@keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+.log{font-family:var(--f-m);font-size:12.5px;color:var(--mute);max-height:120px;overflow:auto;display:grid;gap:3px}
+.lab-guide{position:absolute;inset:0;z-index:5;display:grid;place-items:center;padding:18px;background:color-mix(in srgb,var(--bg) 72%,transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:opacity .4s}
+.lab-guide[hidden]{display:none}
+.lab-guide .gcard{width:min(560px,100%);max-height:100%;overflow:auto;background:var(--surface-solid);border:1px solid var(--line2);border-radius:22px;padding:clamp(18px,3vw,28px);box-shadow:var(--shadow)}
+.lab-guide h3{font-size:clamp(22px,2.4vw,30px);font-weight:800;margin-bottom:6px}
+.lab-guide ol{counter-reset:g;list-style:none;padding:0;margin:14px 0 10px;display:grid;gap:10px}
+.lab-guide li{counter-increment:g;display:grid;grid-template-columns:30px 1fr;gap:10px;font-size:15px;color:var(--ink2)}
+.lab-guide li::before{content:counter(g);width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--on-accent);font:800 13px var(--f-d);display:grid;place-items:center}
+.lab-guide li b{color:var(--ink)}
+.lab-guide .sym{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid var(--e-ioc);vertical-align:-1px;box-shadow:0 0 0 3px color-mix(in srgb,var(--e-ioc) 25%,transparent)}
+.lab-guide .dash{display:inline-block;width:26px;border-top:2.5px dashed var(--e-vuln);vertical-align:3px}
+.lab-guide .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.lab-guide .kbd{font-size:13px;color:var(--mute)}
+.lab-done{position:absolute;inset:auto 14px 70px 14px;z-index:3;border-radius:18px;padding:16px 18px;background:var(--accent);color:var(--on-accent);font-weight:600;transform:translateY(20px);opacity:0;pointer-events:none;transition:all .6s var(--ease)}
+.lab-done.show{transform:none;opacity:1}
+
+/* ================= PAPERS ================= */
+.papers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+@media (max-width:980px){.papers{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.papers{grid-template-columns:minmax(0,1fr)}}
+.paper{position:relative;border-radius:24px;padding:26px;background:var(--surface);border:1px solid var(--line);min-height:360px;display:flex;flex-direction:column}
+.paper .code{font-family:var(--f-d);font-weight:800;font-size:58px;letter-spacing:-.05em;line-height:.85;color:var(--accent)}
+.paper .venue{font-size:13px;color:var(--mute);margin:10px 0 12px}
+.paper h4{font-size:19px;font-weight:600;line-height:1.25;letter-spacing:-.01em;margin-bottom:14px}
+.paper .role{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);font-size:14.5px;color:var(--ink2)}
+.paper .role b{color:var(--ink)}
+.paper .kpi{display:inline-block;font-family:var(--f-d);font-weight:800;font-size:22px;margin-bottom:10px;color:var(--ink)}
+.chain{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:34px;font-family:var(--f-d);font-weight:600;font-size:clamp(18px,2vw,24px)}
+.chain span{padding:10px 16px;border-radius:999px;border:1.5px solid var(--line2)}
+.chain svg{width:28px;height:14px;color:var(--accent)}
+
+/* ================= APPS / GAPS ================= */
+.apps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border-top:1px solid var(--line2)}
+.app{padding:26px 18px 10px 0}
+.app + .app{padding-left:18px;border-left:1px solid var(--line)}
+.app h3{font-size:21px;margin-bottom:10px}
+.app p{font-size:15px}
+@media (max-width:980px){.apps{grid-template-columns:minmax(0,1fr)}.app + .app{padding-left:0;border-left:0;border-top:1px solid var(--line)}}
+.gaps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:24px;overflow:hidden}
+.gap{background:var(--bg);padding:24px;transition:background .3s}
+.gap:hover{background:var(--surface-solid)}
+.gap h4{font-size:19px;font-weight:600;margin-bottom:8px;letter-spacing:-.01em;display:flex;gap:10px;align-items:baseline}
+.gap h4 svg{width:16px;height:16px;flex-shrink:0;color:var(--e-actor);transform:translateY(2px)}
+.gap p{font-size:14.5px;margin:0}
+.gap .who{font-size:12.5px;color:var(--accent);font-weight:600;margin-top:10px}
+@media (max-width:900px){.gaps{grid-template-columns:minmax(0,1fr)}}
+
+/* ================= LOADER SECTION ================= */
+.ldr-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(24px,4vw,56px);align-items:start}
+@media (max-width:900px){.ldr-grid{grid-template-columns:minmax(0,1fr)}}
+.ldr-svg{border-radius:26px;border:1px solid var(--line);background:var(--surface);padding:10px}
+.ldr-svg svg{width:100%;height:auto;display:block}
+.ldr-svg .n circle{stroke-width:3;fill:var(--surface-solid)}
+.ldr-svg .n text{font-family:var(--f-b);font-weight:600;font-size:13px;fill:var(--ink);text-anchor:middle}
+.ldr-svg .e{stroke:var(--line2);stroke-width:1.8;fill:none}
+.ldr-svg .e.hl{stroke:var(--accent);stroke-width:2.6}
+.ldr-svg .el{font-family:var(--f-b);font-size:11.5px;fill:var(--mute);text-anchor:middle}
+.hyp{margin-top:20px;padding:22px;border-radius:22px;background:var(--ink);color:var(--bg)}
+.hyp h4{font-family:var(--f-d);font-weight:600;font-size:14px;opacity:.7;margin-bottom:8px;letter-spacing:0}
+.hyp p{color:inherit;font-size:16.5px;margin:0}
+.scope{counter-reset:sc;list-style:none;padding:0;margin:10px 0 0;display:grid;gap:0}
+.scope li{counter-increment:sc;display:grid;grid-template-columns:48px 1fr;gap:12px;padding:14px 0;border-top:1px solid var(--line)}
+.scope li::before{content:counter(sc,decimal-leading-zero);font-family:var(--f-d);font-weight:800;font-size:20px;color:var(--accent)}
+.scope b{display:block;color:var(--ink)}
+
+/* ================= CONCLUSION / FOOTER ================= */
+.final{padding:clamp(110px,16vh,190px) 0 60px}
+.final h2{font-size:clamp(44px,9vw,150px);font-weight:800;letter-spacing:-.055em;line-height:.88}
+.final h2 .o{color:transparent;-webkit-text-stroke:2px var(--ink)}
+.concl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin-top:50px}
+@media (max-width:900px){.concl{grid-template-columns:minmax(0,1fr)}}
+.refs{list-style:none;padding:0;margin:0;display:grid;gap:10px;font-size:14.5px;color:var(--ink2)}
+.refs li{padding-left:58px;position:relative}
+.refs li b{position:absolute;left:0;font-family:var(--f-d);color:var(--accent)}
+.author{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;border-top:1px solid var(--line2);padding-top:28px;margin-top:60px}
+.author div span{display:block;font-size:13px;color:var(--mute)}
+.author div b{font-family:var(--f-d);font-size:20px;font-weight:600;letter-spacing:-.01em}
+@media (max-width:820px){.author{grid-template-columns:repeat(2,minmax(0,1fr))}}
+footer{padding:30px 0 50px;font-size:13.5px;color:var(--mute)}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(30px);transition:opacity 1s var(--ease),transform 1s var(--ease)}
+.rv.in{opacity:1;transform:none}
+
+:focus-visible{outline:2.5px solid var(--accent2);outline-offset:3px;border-radius:6px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* reduced-motion mode: follows the system setting by default, can be switched with the "Hiệu ứng" button */
+:root.rm *,:root.rm *::before,:root.rm *::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+:root.rm .hero h1 .ch{opacity:1;transform:none;filter:none}
+:root.rm .rv{opacity:1;transform:none}
+:root.rm .band .track{animation:none}
+:root.rm .manifesto .w{opacity:1}
+:root.rm .cur-dot,:root.rm .cur-ring{display:none}
+.pill{height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line2);background:var(--surface);color:var(--ink);font:600 13.5px var(--f-b);cursor:pointer;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.pill i{width:8px;height:8px;border-radius:50%;background:var(--e-ioc);box-shadow:0 0 0 3px color-mix(in srgb,var(--e-ioc) 25%,transparent)}
+:root.rm .pill i{background:var(--mute);box-shadow:none}
+.toast{position:fixed;z-index:60;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);transform:translate(-50%,140%);width:min(560px,calc(100% - 28px));background:var(--surface-solid);border:1px solid var(--line2);border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);display:flex;gap:14px;align-items:center;flex-wrap:wrap;transition:transform .5s cubic-bezier(.2,.8,.1,1)!important;font-size:14.5px;color:var(--ink2)}
+.toast.show{transform:translate(-50%,0)}
+.toast p{margin:0;flex:1 1 260px}
+.toast .row{display:flex;gap:8px}
+.toast button{font:600 14px var(--f-b);border-radius:999px;padding:9px 14px;cursor:pointer;border:1px solid var(--line2);background:transparent;color:var(--ink)}
+.toast button.go{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+</style>
+</head>
+<body>
+
+<!-- ================= LOADER ================= -->
+<div id="pageLoader" role="status" aria-label="Đang tải trang">
+  <div class="ld">
+    <svg viewBox="0 0 260 150" aria-hidden="true">
+      <line x1="40" y1="40" x2="130" y2="75" style="animation-delay:.15s"/>
+      <line x1="130" y1="75" x2="220" y2="35" style="animation-delay:.35s"/>
+      <line x1="130" y1="75" x2="200" y2="125" style="animation-delay:.55s"/>
+      <line x1="40" y1="40" x2="60" y2="120" style="animation-delay:.75s"/>
+      <line x1="60" y1="120" x2="130" y2="75" style="animation-delay:.9s"/>
+      <circle cx="40" cy="40" r="9" style="stroke:var(--e-actor);animation-delay:0s"/>
+      <circle cx="130" cy="75" r="13" style="stroke:var(--e-mal);animation-delay:.25s"/>
+      <circle cx="220" cy="35" r="9" style="stroke:var(--e-tech);animation-delay:.45s"/>
+      <circle cx="200" cy="125" r="9" style="stroke:var(--e-ioc);animation-delay:.65s"/>
+      <circle cx="60" cy="120" r="8" style="stroke:var(--e-vuln);animation-delay:.85s"/>
+    </svg>
+    <div class="pct" id="ldPct">0%</div>
+    <div class="trip" id="ldTrip">Đang dựng đồ thị tri thức</div>
+  </div>
+</div>
+
+<div class="cur-ring" id="curRing" aria-hidden="true"></div>
+<div class="cur-dot" id="curDot" aria-hidden="true"></div>
+
+<!-- ================= TOP ================= -->
+<header class="top" id="top">
+  <div class="wrap">
+    <a class="brand" href="#hero" data-magnet>
+      <svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="6" cy="7" r="3.2" fill="var(--e-actor)"/><circle cx="19" cy="6" r="3.2" fill="var(--e-tech)"/><circle cx="13" cy="19" r="4" fill="var(--accent)"/><path d="M6 7 13 19 19 6" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+      KG trong CTI
+    </a>
+    <nav aria-label="Điều hướng chính">
+      <span class="navlinks">
+        <a href="#nen-tang">Nền tảng</a>
+        <a href="#quy-trinh">Quy trình</a>
+        <a href="#phong-dieu-tra">Phòng điều tra</a>
+        <a href="#nghien-cuu">Nghiên cứu</a>
+        <a href="#malware-loader">Malware Loader</a>
+      </span>
+      <button class="pill" id="motionBtn" type="button" aria-pressed="true" data-magnet><i></i><span>Hiệu ứng: bật</span></button>
+      <button class="iconbtn" id="themeBtn" type="button" aria-label="Đổi giao diện sáng/tối" data-magnet>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+      </button>
+    </nav>
+  </div>
+  <div class="progress" id="progress"></div>
+</header>
+
+<main>
+<!-- ================= HERO ================= -->
+<section class="hero" id="hero">
+  <canvas id="heroCanvas" aria-hidden="true"></canvas>
+  <p class="hint" id="heroHint">Một analyst ảo đang lần theo các thực thể. Di chuột để tự điều khiển.</p>
+  <div class="wrap">
+    <div class="meta fade">
+      <span class="chip"><i style="background:var(--accent)"></i>Báo cáo thu hoạch cá nhân</span>
+      <span class="chip">Học phần Cyber Threat Intelligence</span>
+      <span class="chip">Trường Đại học FPT</span>
+    </div>
+    <h1 id="heroTitle" aria-label="Knowledge Graph">
+      <span class="row" data-split>Knowledge</span>
+      <span class="row row2" data-split>Graph</span>
+    </h1>
+    <div class="sub">
+      <p class="fade d2">trong Cyber Threat Intelligence: cách đồ thị tri thức biến những IoC rời rạc thành câu chuyện về <strong>ai</strong>, <strong>bằng cách nào</strong> và <strong>điều gì tiếp theo</strong>.</p>
+      <div class="ctas fade d3">
+        <a class="btn" href="#nen-tang" data-magnet><span class="lbl">Đọc báo cáo</span></a>
+        <a class="btn solid" href="#phong-dieu-tra" data-magnet><span class="lbl">Tự tay điều tra</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MARQUEE ================= -->
+<div class="marq" aria-hidden="true">
+  <div class="band b1"><div class="track" id="mq1"></div><div class="track" id="mq1b"></div></div>
+  <div class="band b2"><div class="track" id="mq2"></div><div class="track" id="mq2b"></div></div>
+</div>
+
+<!-- ================= MANIFESTO ================= -->
+<section class="manifesto" id="tuyen-ngon">
+  <div class="wrap">
+    <p id="manifesto">Một danh sách IoC cho biết cái gì. Một đồ thị tri thức cho biết ai đứng sau, dùng công cụ nào, nhắm vào đâu và điều gì có thể xảy ra tiếp theo. Giá trị của tình báo mối đe dọa không nằm ở số lượng chỉ số, mà nằm ở các cạnh nối chúng lại với nhau.</p>
+    <div class="by">Luận điểm trung tâm của báo cáo</div>
+  </div>
+</section>
+
+<!-- ================= STATS ================= -->
+<section class="sec" id="so-lieu" style="padding-top:0">
+  <div class="wrap">
+    <div class="stats">
+      <div class="stat rv"><div class="num" data-count="6">0</div><div class="what">nghiên cứu được tổng hợp</div><div class="src">P1 đến P6, cộng SANS CTI Survey làm bối cảnh</div></div>
+      <div class="stat rv"><div class="num" data-count="40" data-prefix="&gt;" data-suffix="%">0</div><div class="what">thời gian xử lý CTI thủ công</div><div class="src">Khảo sát SANS, được các nghiên cứu trích dẫn</div></div>
+      <div class="stat rv"><div class="num" data-count="417">0</div><div class="what">bài báo về MITRE ATT&amp;CK</div><div class="src">Systematic review P5</div></div>
+      <div class="stat rv"><div class="num" data-count="18">0</div><div class="what">loại STIX Domain Object</div><div class="src">Chuẩn OASIS STIX 2.1</div></div>
+      <div class="stat rv"><div class="num" data-count="94.08" data-dec="2" data-suffix="%">0</div><div class="what">accuracy ánh xạ TTP</div><div class="src">TTPMapper, P3</div></div>
+      <div class="stat rv"><div class="num" data-count="202">0</div><div class="what">ATT&amp;CK techniques được bao phủ</div><div class="src">TTPMapper, P3</div></div>
+      <div class="stat rv"><div class="num" data-count="0.941" data-dec="3">0</div><div class="what">F1 trích xuất threat action</div><div class="src">K-CTIAA, P4</div></div>
+      <div class="stat rv"><div class="num" data-count="9">0</div><div class="what">research gaps lặp lại giữa các nguồn</div><div class="src">Tổng hợp của báo cáo</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FOUNDATION ================= -->
+<section class="sec" id="nen-tang">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="idx">Nền tảng</div>
+      <h2 class="big">Mọi thứ bắt đầu từ một bộ ba</h2>
+    </div>
+    <div class="two">
+      <div class="rv">
+        <p class="lede">Knowledge Graph là đồ thị <strong>có hướng và có nhãn</strong>: mỗi nút là một thực thể, mỗi cạnh là một quan hệ. Đơn vị dữ liệu cơ bản là bộ ba (triple):</p>
+        <div class="formula"><span>head,</span><span>relation,</span><span>tail</span></div>
+        <p>Ví dụ: (Adwind, isA, RAT) hay (Malware X, exploits, CVE-2023-xxxx). Nhiều triple dùng chung thực thể sẽ đan thành một mạng. Từ một domain độc hại, ta có thể đi theo các cạnh tới malware liên quan, kỹ thuật mà nó dùng, actor đứng sau và chiến dịch mà nó thuộc về.</p>
+        <p><strong>Ontology/schema</strong> quy định lớp thực thể nào tồn tại và quan hệ nào là hợp lệ giữa các lớp. <strong>Instance</strong> là các triple cụ thể trích xuất từ báo cáo. Schema giữ cho dữ liệu nhất quán nhưng có thể làm mất thông tin ở những ngữ cảnh nằm ngoài tập định sẵn.</p>
+      </div>
+      <div class="builder rv" id="builder">
+        <h3>Thử ghép một triple</h3>
+        <p class="note">Chọn chủ thể, quan hệ, đối tượng. Schema sẽ kiểm tra xem quan hệ có hợp lệ giữa hai lớp thực thể hay không.</p>
+        <div class="row">
+          <label>Head<select id="bH"></select></label>
+          <label>Relation<select id="bR"></select></label>
+          <label>Tail<select id="bT"></select></label>
+        </div>
+        <button class="btn solid" type="button" id="bGo" data-magnet><span class="lbl">Kiểm tra với schema</span></button>
+        <div class="verdict" id="bOut" style="margin-top:14px" aria-live="polite">Kết quả kiểm tra sẽ hiện ở đây. Triple hợp lệ sẽ được thêm vào đồ thị nhỏ bên dưới.</div>
+        <div class="minigraph" id="bGraph"></div>
+      </div>
+    </div>
+
+    <div class="two" style="margin-top:clamp(70px,10vw,120px)">
+      <div class="rv">
+        <h3 style="margin-bottom:16px">Vì sao CTI cần đồ thị</h3>
+        <div class="tablewrap"><table class="cmp">
+          <thead><tr><th>Tiêu chí</th><th>Danh sách IoC / bảng</th><th>Knowledge Graph</th></tr></thead>
+          <tbody>
+            <tr><td>Đơn vị dữ liệu</td><td>Chỉ số riêng lẻ</td><td>Thực thể và quan hệ</td></tr>
+            <tr><td>Ngữ cảnh</td><td>Bị tách khỏi báo cáo gốc</td><td>Giữ lại ai, dùng gì, nhắm vào đâu</td></tr>
+            <tr><td>Truy vấn nhiều bước</td><td>Nhiều phép join phức tạp</td><td>Duyệt đường đi tự nhiên</td></tr>
+            <tr><td>Tích hợp nhiều nguồn</td><td>Khó khi khác cấu trúc</td><td>Hội tụ qua thực thể chung</td></tr>
+            <tr><td>Suy luận</td><td>Hạn chế</td><td>Theo luật hoặc link prediction</td></tr>
+            <tr><td>Theo thời gian</td><td>IoC nhanh lỗi thời</td><td>Quan hệ TTP bền vững hơn</td></tr>
+          </tbody></table></div>
+      </div>
+      <div class="rv">
+        <h3 style="margin-bottom:8px">Pyramid of Pain</h3>
+        <p>Mô hình của David Bianco: càng lên cao, kẻ tấn công càng tốn công để thay đổi. KG nối các chỉ số ở đáy với hành vi ở đỉnh.</p>
+        <div class="pyr" aria-label="Kim tự tháp Pyramid of Pain">
+          <div style="width:40%;background:var(--e-actor)"><span>TTPs</span><span>rất khó</span></div>
+          <div style="width:52%;background:var(--e-mal)"><span>Tools</span><span>khó</span></div>
+          <div style="width:64%;background:var(--accent)"><span>Network/Host artifacts</span><span>phiền toái</span></div>
+          <div style="width:76%;background:var(--e-tech)"><span>Domain names</span><span>đơn giản</span></div>
+          <div style="width:88%;background:var(--e-ioc)"><span>IP addresses</span><span>dễ</span></div>
+          <div style="width:100%;background:var(--e-tele)"><span>Hash values</span><span>tầm thường</span></div>
+        </div>
+        <div class="pyr-legend"><span>Tri thức mức thấp ở đáy</span><span>Hành vi mức cao ở đỉnh</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DATA MODEL ================= -->
+<section class="sec" id="mo-hinh" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="idx">Mô hình dữ liệu</div>
+      <h2 class="big">Ngữ pháp của một đồ thị mối đe dọa</h2>
+      <p class="lede">P1 dùng một tập lớp thực thể cố định để LLM trích xuất theo cùng một cấu trúc. Kết hợp với ATT&amp;CK, ta có thêm Technique và Vulnerability.</p>
+    </div>
+    <div class="ent-grid">
+      <div class="ent tilt rv" style="color:var(--e-actor)"><div class="shine"></div><div class="dot" style="background:var(--e-actor)"></div><h4 style="color:var(--ink)">Threat Actor</h4><p>Nhóm hoặc cá nhân đứng sau hoạt động tấn công.</p><code>(Actor B, uses, Malware A)</code></div>
+      <div class="ent tilt rv" style="color:var(--e-mal)"><div class="shine"></div><div class="dot" style="background:var(--e-mal)"></div><h4 style="color:var(--ink)">Malware</h4><p>Mã độc, RAT, ransomware, loader.</p><code>(Adwind, isA, RAT)</code></div>
+      <div class="ent tilt rv" style="color:var(--e-tech)"><div class="shine"></div><div class="dot" style="background:var(--e-tech)"></div><h4 style="color:var(--ink)">Technique</h4><p>Hành vi đã chuẩn hóa theo MITRE ATT&amp;CK.</p><code>T1059.001 PowerShell</code></div>
+      <div class="ent tilt rv" style="color:var(--e-ioc)"><div class="shine"></div><div class="dot" style="background:var(--e-ioc)"></div><h4 style="color:var(--ink)">Indicator</h4><p>IP, domain, hash, URL.</p><code>(domain-x, indicates, Malware A)</code></div>
+      <div class="ent tilt rv" style="color:var(--e-vuln)"><div class="shine"></div><div class="dot" style="background:var(--e-vuln)"></div><h4 style="color:var(--ink)">Vulnerability</h4><p>Lỗ hổng bị khai thác.</p><code>(Malware X, exploits, CVE)</code></div>
+      <div class="ent tilt rv" style="color:var(--e-target)"><div class="shine"></div><div class="dot" style="background:var(--e-target)"></div><h4 style="color:var(--ink)">Mục tiêu</h4><p>Organization, Location, Application, Operating System.</p><code>(Malware A, targets, Windows)</code></div>
+    </div>
+    <p class="note rv" style="margin-top:18px">Tập quan hệ chuẩn hóa trong P1: isA, uses, targets, exploits, indicates, hasAlias, hasAuthor, variantOf, discoveredIn. Thực thể Time ghi nhận mốc thời gian.</p>
+
+    <div class="std-grid">
+      <article class="std s1 tilt rv"><div class="shine"></div>
+        <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="50" cy="50" r="12" fill="currentColor"/></svg>
+        <div><div class="role">Cấu trúc</div><h3>STIX 2.1</h3>
+        <p>Chuẩn OASIS, về bản chất là một mô hình đồ thị. 18 loại SDO là các nút, còn SRO (Relationship, Sighting) là các cạnh. Từ vựng quan hệ có sẵn gồm uses, targets, indicates, attributed-to, variant-of, exploits, communicates-with, downloads, drops. TAXII là giao thức để trao đổi dữ liệu STIX.</p></div>
+      </article>
+      <article class="std s2 tilt rv"><div class="shine"></div>
+        <svg viewBox="0 0 100 100" aria-hidden="true"><rect x="10" y="10" width="80" height="80" fill="none" stroke="currentColor" stroke-width="6"/><path d="M10 50h80M50 10v80" stroke="currentColor" stroke-width="6"/></svg>
+        <div><div class="role">Hành vi</div><h3>MITRE ATT&amp;CK</h3>
+        <p>Tổ chức theo tactic, technique và sub-technique với định danh ổn định như T1059.001. ATT&amp;CK được phát hành ở dạng STIX nên có thể nạp làm khung xương cho các nút hành vi. P5 tổng hợp 417 bài cho thấy nó được dùng rộng rãi cho mapping, detection, hunting và IR.</p></div>
+      </article>
+      <article class="std s3 tilt rv"><div class="shine"></div>
+        <svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 8 88 24v28c0 22-16 36-38 42C28 88 12 74 12 52V24Z" fill="none" stroke="currentColor" stroke-width="6"/></svg>
+        <div><div class="role">Phòng thủ</div><h3>MITRE D3FEND</h3>
+        <p>Một knowledge graph về kỹ thuật phòng thủ, liên kết với kỹ thuật tấn công thông qua các digital artifact. P4 khai thác chuỗi threat action → ATT&amp;CK → D3FEND để gợi ý biện pháp đối phó.</p></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= HORIZONTAL PIPELINE ================= -->
+<section class="hz" id="quy-trinh" style="height:420vh">
+  <div class="hz-sticky">
+    <div class="hz-head">
+      <h2>Từ báo cáo thô<br>đến đồ thị sống</h2>
+      <div class="count"><span id="hzCount">01</span> / 09 bước xây dựng</div>
+    </div>
+    <div class="hz-track" id="hzTrack">
+      <article class="step"><div class="n">01</div><h3>Thu thập</h3><p>Nguồn có cấu trúc (feed, STIX/TAXII, JSON), bán cấu trúc (log, EDR, telemetry) và phi cấu trúc (threat report, blog, phân tích malware, diễn đàn ngầm). Nguồn phi cấu trúc giàu ngữ cảnh nhất và là mục tiêu chính của P1, P2, P3.</p><div class="tags"><span>Threat report</span><span>OSINT</span><span>SIEM/EDR</span></div></article>
+      <article class="step warn"><div class="n">02</div><h3>Tiền xử lý</h3><p>Làm sạch nhiễu, tách câu và lọc câu có thông tin đe dọa. Nếu bước lọc câu sai hoặc bỏ sót, lỗi sẽ lan truyền xuống toàn bộ các bước sau.</p><div class="tags"><span>Noise</span><span>Error propagation</span></div></article>
+      <article class="step"><div class="n">03</div><h3>Trích xuất thực thể</h3><p>NER nhận diện IoC (IP, domain, hash, URL, CVE) và thực thể ngữ cảnh (actor, malware, phần mềm, hệ điều hành, tổ chức, vị trí, thời gian). IoC dạng chuỗi có thể bắt bằng regex; thực thể ngữ cảnh cần mô hình hiểu ngôn ngữ.</p><div class="tags"><span>NER</span><span>Regex</span></div></article>
+      <article class="step"><div class="n">04</div><h3>Trích xuất quan hệ</h3><p>Bước cốt lõi biến câu văn thành cạnh. Có ba nhóm phương pháp: luật/template, học máy/NLP và LLM. Với LLM, P1 dùng few-shot prompting và instruction tuning để ép đầu ra theo dạng [Entity₁, Relation, Entity₂].</p><div class="tags"><span>Triple</span><span>LLM</span><span>CyBERT</span></div></article>
+      <article class="step"><div class="n">05</div><h3>Hợp nhất thực thể</h3><p>Cùng một actor hay malware được các hãng gọi bằng tên khác nhau. Nếu không hợp nhất, đồ thị sẽ có nút trùng và quan hệ bị phân mảnh. Bước này gộp nút trùng và ghi lại bí danh bằng hasAlias.</p><div class="tags"><span>Entity resolution</span><span>hasAlias</span></div></article>
+      <article class="step"><div class="n">06</div><h3>Ánh xạ ATT&amp;CK</h3><p>Gán định danh technique thống nhất cho các nút hành vi. TTPMapper (P3) đạt 94.08% accuracy, bao phủ 202 techniques, nhưng vẫn gặp mất cân bằng lớp và câu chưa từng gặp.</p><div class="tags"><span>TTP mapping</span><span>P3</span></div></article>
+      <article class="step"><div class="n">07</div><h3>Lưu trữ đồ thị</h3><p>Property graph (Neo4j, truy vấn Cypher) hoặc RDF triple store (SPARQL). Mỗi triple nên đi kèm provenance (báo cáo nào, thời điểm nào, phương pháp nào) và điểm tin cậy.</p><div class="tags"><span>Neo4j</span><span>SPARQL</span><span>Provenance</span></div></article>
+      <article class="step"><div class="n">08</div><h3>Suy luận và làm giàu</h3><p>Truy vấn đa bước, suy luận theo luật, link prediction bằng KG embedding. Làm giàu bằng liên kết tới ATT&amp;CK, CVE/NVD, malware database, lịch sử chiến dịch và telemetry nội bộ.</p><div class="tags"><span>Link prediction</span><span>Enrichment</span></div></article>
+      <article class="step"><div class="n">09</div><h3>Phản hồi</h3><p>Kết quả hunting, false positive và đánh giá của analyst quay ngược lại pipeline để cập nhật KG, bổ sung dữ liệu, huấn luyện lại mô hình và chỉnh quy tắc mapping.</p><div class="tags"><span>Feedback loop</span><span>Human-in-the-loop</span></div></article>
+    </div>
+    <div class="hz-bar"><i id="hzBar"></i></div>
+  </div>
+</section>
+
+<!-- ================= SCROLL STORY ================= -->
+<section class="sec" id="ke-chuyen">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="idx">Kể chuyện theo cuộn</div>
+      <h2 class="big">Một câu văn trở thành cạnh đồ thị</h2>
+      <p class="note">Câu ví dụ dưới đây là minh họa, không trích từ một báo cáo thật.</p>
+    </div>
+    <div class="story">
+      <div class="story-steps">
+        <div class="st" data-step="0"><div class="k">Bước 1</div><h3>Văn bản thô</h3><p>Báo cáo CTI được viết cho con người đọc. Với máy tính, đây chỉ là một chuỗi ký tự: không có “actor”, không có “malware”, không có quan hệ nào cả.</p></div>
+        <div class="st" data-step="1"><div class="k">Bước 2</div><h3>Nhận diện thực thể</h3><p>NER tô màu từng thực thể theo lớp: actor, malware, technique, indicator. Đây là lúc văn bản bắt đầu có “danh từ” mà máy hiểu được.</p></div>
+        <div class="st" data-step="2"><div class="k">Bước 3</div><h3>Trích xuất triple</h3><p>Quan hệ giữa các thực thể được rút ra thành bộ ba theo schema. LLM hoặc mô hình chuyên biệt làm việc này, và đầu ra cần được kiểm định.</p></div>
+        <div class="st" data-step="3"><div class="k">Bước 4</div><h3>Dựng đồ thị</h3><p>Các triple dùng chung thực thể nối lại thành mạng. Câu văn mờ dần vì tri thức giờ đã sống trong cấu trúc.</p></div>
+        <div class="st" data-step="4"><div class="k">Bước 5</div><h3>Chuẩn hóa ATT&amp;CK</h3><p>Mô tả “tải payload từ máy chủ từ xa” được gắn định danh T1105 Ingress Tool Transfer. Báo cáo khác dùng văn phong khác cũng sẽ trỏ về cùng nút này.</p></div>
+        <div class="st" data-step="5"><div class="k">Bước 6</div><h3>Suy luận cạnh còn thiếu</h3><p>Actor B dùng Malware A, Malware A dùng T1105, nên có giả thuyết Actor B thường dùng T1105. Cạnh nét đứt là giả thuyết, cần kiểm chứng trước khi tin.</p></div>
+      </div>
+      <div class="story-vis" id="storyVis" data-s="0">
+        <svg viewBox="0 0 600 560" role="img" aria-label="Minh họa câu văn chuyển thành đồ thị">
+          <g class="sent-g">
+            <text class="sv-sent" x="40" y="70"><tspan class="e e1">Nhóm Actor B</tspan> triển khai <tspan class="e e2">Malware A</tspan>;</text>
+            <text class="sv-sent" x="40" y="104">mã độc <tspan class="e e3">tải payload từ máy chủ từ xa</tspan></text>
+            <text class="sv-sent" x="40" y="138">và liên lạc với <tspan class="e e4">update-cdn[.]example</tspan>.</text>
+          </g>
+          <g class="sv-layer L2">
+            <text class="sv-trip" x="40" y="230">(Actor B, uses, Malware A)</text>
+            <text class="sv-trip" x="40" y="266">(Malware A, uses, tải payload từ xa)</text>
+            <text class="sv-trip" x="40" y="302">(update-cdn[.]example, indicates, Malware A)</text>
+          </g>
+          <g class="sv-layer L3">
+            <path class="sv-edge" d="M150 250 Q 250 300 300 360"/>
+            <path class="sv-edge" d="M300 360 Q 400 300 470 250"/>
+            <path class="sv-edge" d="M140 470 Q 220 430 300 360"/>
+            <text class="sv-lbl" x="215" y="290">uses</text><text class="sv-lbl" x="405" y="290">uses</text><text class="sv-lbl" x="200" y="438">indicates</text>
+            <g class="sv-node"><circle cx="140" cy="240" r="22" style="stroke:var(--e-actor)"/><text x="140" y="290">Actor B</text></g>
+            <g class="sv-node"><circle cx="300" cy="370" r="28" style="stroke:var(--e-mal)"/><text x="300" y="426">Malware A</text></g>
+            <g class="sv-node"><circle cx="480" cy="240" r="22" style="stroke:var(--e-tech)"/><text x="480" y="290" class="tlabel">tải payload từ xa</text></g>
+            <g class="sv-node"><circle cx="130" cy="480" r="18" style="stroke:var(--e-ioc)"/><text x="130" y="522">update-cdn[.]example</text></g>
+          </g>
+          <g class="sv-layer L4">
+            <g class="sv-badge"><rect x="410" y="300" width="140" height="30" rx="15"/><text x="480" y="320">T1105</text></g>
+          </g>
+          <g class="sv-layer L5">
+            <path class="sv-pred" d="M165 228 Q 310 150 455 228"/>
+            <text class="sv-lbl" x="310" y="172" style="fill:var(--e-vuln);font-weight:600">thường dùng? (dự đoán)</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= METHODS ================= -->
+<section class="sec" id="phuong-phap" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="idx">Phương pháp</div>
+      <h2 class="big">Ba cách đọc một báo cáo</h2>
+    </div>
+    <div class="rv">
+      <div class="m-tabs" role="tablist" aria-label="Nhóm phương pháp trích xuất">
+        <button role="tab" aria-selected="true" data-m="rule" data-magnet>Luật / template</button>
+        <button role="tab" aria-selected="false" data-m="ml" data-magnet>Học máy / NLP</button>
+        <button role="tab" aria-selected="false" data-m="llm" data-magnet>LLM</button>
+      </div>
+      <div class="m-panel" role="tabpanel" id="mPanel"></div>
+    </div>
+    <div class="two" style="margin-top:70px">
+      <div class="rv">
+        <h3 style="margin-bottom:10px">TTPMapper (P3): ánh xạ hành vi sang ATT&amp;CK</h3>
+        <p>Kết hợp CyBERT, tăng cường dữ liệu, huấn luyện mô hình kép, tích hợp GPT và tính điểm tin cậy bằng heuristic.</p>
+        <div class="metrics">
+          <div><b>94.08%</b><span>Accuracy</span></div><div><b>93.7%</b><span>Precision</span></div>
+          <div><b>94.0%</b><span>Recall</span></div><div><b>~93.8%</b><span>F1-score</span></div>
+        </div>
+        <p class="note" style="margin-top:14px">Hạn chế còn lại: số Procedure Examples phân bổ không đều giữa các technique, câu mơ hồ ngữ nghĩa, và câu hoặc TTP chưa từng gặp.</p>
+      </div>
+      <div class="rv">
+        <h3 style="margin-bottom:10px">K-CTIAA (P4): khi KG giúp mô hình đọc hiểu</h3>
+        <p>Đi theo chiều ngược với P1: các triple liên quan từ một cybersecurity KG được chèn vào đầu vào của pretrained model. <strong>Visibility matrix</strong> giới hạn ảnh hưởng của tri thức chèn vào để nó chỉ tác động tới các token liên quan.</p>
+        <div class="metrics" style="grid-template-columns:1fr 1fr">
+          <div><b>0.941</b><span>F1 trích xuất threat action</span></div>
+          <div><b style="font-size:clamp(20px,2.2vw,28px)">ATT&amp;CK → D3FEND</b><span>gợi ý biện pháp đối phó</span></div>
+        </div>
+        <p class="note" style="margin-top:14px">Hạn chế: nhiễu tri thức, giới hạn độ dài đầu vào, khó lọc theo mức độ liên quan ngữ nghĩa, KG cần được cập nhật động.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LAB ================= -->
+<section class="sec lab" id="phong-dieu-tra">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="idx">Phòng điều tra</div>
+      <h2 class="big">Bắt đầu từ một domain, lần ra cả chiến dịch</h2>
+      <p class="lede">Proxy log vừa ghi nhận một máy trạm kết nối tới <strong>update-cdn[.]example</strong>. Hãy nhấp vào nút để <strong>pivot</strong> sang các thực thể liên quan, chạy <strong>link prediction</strong> và xem đồ thị tự sinh ra <strong>giả thuyết săn tìm</strong>.</p>
+      <p class="note">Mô phỏng phục vụ học tập. Dữ liệu là giả định, được dựng theo schema và các technique ATT&amp;CK thật trình bày trong báo cáo.</p>
+    </div>
+    <div class="lab-ui rv">
+      <div class="lab-stage" id="labStage">
+        <canvas id="labCanvas" aria-label="Đồ thị điều tra tương tác. Dùng các nút bên dưới nếu không dùng chuột."></canvas>
+        <div class="lab-toolbar">
+          <button class="tbtn primary" type="button" id="labExpand" data-magnet>Pivot từ nút đang chọn</button>
+          <button class="tbtn" type="button" id="labPredict" data-magnet disabled>Chạy link prediction</button>
+          <button class="tbtn" type="button" id="labReset" data-magnet>Làm lại</button>
+          <button class="tbtn" type="button" id="labSound" aria-pressed="true" data-magnet>Âm thanh: bật</button>
+          <button class="tbtn" type="button" id="labDemo" data-magnet>▶ Demo tự động</button>
+          <button class="tbtn" type="button" id="labHelp" data-magnet>? Hướng dẫn</button>
+        </div>
+        <div class="lab-guide" id="labGuide">
+          <div class="gcard">
+            <h3>Cách chơi Phòng điều tra</h3>
+            <p class="note" style="margin:0">Nhiệm vụ: từ một domain đáng ngờ trong proxy log, lần ra toàn bộ 20 thực thể liên quan và các giả thuyết săn tìm.</p>
+            <ol>
+              <li><span><b>Nhấp một lần</b> vào một nút để chọn nó. Thông tin, nguồn và số hàng xóm hiện ở khung bên phải.</span></li>
+              <li><span><b>Nhấp lần nữa</b> vào nút đang chọn (hoặc bấm nút vàng “Pivot”) để mở rộng sang các thực thể nối với nó. Nút có vòng <span class="sym"></span> nhấp nháy là nút vẫn còn hàng xóm chưa mở.</span></li>
+              <li><span><b>Kéo thả</b> các nút để sắp xếp lại đồ thị cho dễ nhìn.</span></li>
+              <li><span>Khi đã mở tới <b>Loader L</b> và <b>Actor B</b>, bấm <b>“Chạy link prediction”</b>. Các cạnh dự đoán hiện bằng nét đứt <span class="dash"></span> kèm lý giải trong nhật ký.</span></li>
+              <li><span>Mỗi <b>technique</b> mở ra sẽ sinh một <b>giả thuyết săn tìm</b> kèm Event ID cần kiểm tra ở khung bên phải.</span></li>
+            </ol>
+            <p class="kbd">Bàn phím: Tab vào đồ thị, ← → để chọn nút, Enter để pivot.</p>
+            <div class="acts">
+              <button class="btn solid" type="button" id="guideStart" data-magnet><span class="lbl">Tự khám phá</span></button>
+              <button class="btn" type="button" id="guideDemo" data-magnet><span class="lbl">▶ Xem demo tự động</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="lab-done" id="labDone">Bạn đã khám phá toàn bộ đồ thị. Từ một domain, bạn lần ra loader, payload, chiến dịch, actor và nguồn telemetry cần kiểm tra.</div>
+        <div class="lab-foot">
+          <div class="lab-legend">
+            <span><i style="background:var(--e-ioc)"></i>Indicator</span><span><i style="background:var(--e-mal)"></i>Malware</span>
+            <span><i style="background:var(--e-tech)"></i>Technique</span><span><i style="background:var(--e-actor)"></i>Actor/Campaign</span>
+            <span><i style="background:var(--e-vuln)"></i>Vulnerability</span><span><i style="background:var(--e-target)"></i>Mục tiêu</span><span><i style="background:var(--e-tele)"></i>Telemetry</span>
+          </div>
+          <div class="lab-prog" id="labProg">1 / 20 nút</div>
+        </div>
+      </div>
+      <div class="lab-side">
+        <div class="card" id="inspect" aria-live="polite"></div>
+        <div class="card"><h4>Giả thuyết săn tìm</h4><ul class="hyps" id="hyps"><li class="empty">Pivot tới các nút technique để đồ thị tự sinh giả thuyết.</li></ul></div>
+        <div class="card"><h4>Nhật ký truy vấn</h4><div class="log" id="labLog"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PAPERS ================= -->
+<section class="sec" id="nghien-cuu">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="idx">Sáu nghiên cứu</div>
+      <h2 class="big">Mỗi paper một vai trò quanh KG</h2>
+    </div>
+    <div class="papers">
+      <article class="paper tilt rv"><div class="shine"></div><div class="code">P1</div><div class="venue">Workshop on Attackers and Cyber-Crime Operations, 2024</div><h4>Actionable Cyber Threat Intelligence using Knowledge Graphs and Large Language Models</h4><p>LLM mã nguồn mở (Llama 2, Mistral 7B, Zephyr) trích xuất triple, xây KG rồi chạy link prediction.</p><div class="role"><b>KG là đầu ra và nền tảng suy luận.</b> Hạn chế: khả năng mở rộng trên dữ liệu lớn.</div></article>
+      <article class="paper tilt rv"><div class="shine"></div><div class="code">P2</div><div class="venue">RAID 2023</div><h4>Looking Beyond IoCs: Automatically Extracting Attack Patterns from External CTI</h4><p>Khung LADDER phân loại câu, trích xuất attack patterns, ánh xạ ATT&amp;CK và biểu diễn bằng KG.</p><div class="role"><b>KG biểu diễn attack patterns.</b> Vượt khỏi cách tiếp cận chỉ dựa trên IoC.</div></article>
+      <article class="paper tilt rv"><div class="shine"></div><div class="code">P3</div><div class="venue">IEEE Xplore</div><h4>TTPMapper: Accurate Mapping of TTPs from Unstructured CTI Reports</h4><span class="kpi">94.08% accuracy</span><p>CyBERT, data augmentation, GPT và confidence scoring; bao phủ 202 techniques.</p><div class="role"><b>Cung cấp nút hành vi chuẩn hóa.</b> Hạn chế: mất cân bằng lớp, TTP chưa gặp.</div></article>
+      <article class="paper tilt rv"><div class="shine"></div><div class="code">P4</div><div class="venue">Symmetry 2023, 15, 337</div><h4>K-CTIAA: Automatic Analysis of Cyber Threat Intelligence Based on a Knowledge Graph</h4><span class="kpi">F1 = 0.941</span><p>Chèn tri thức từ KG vào pretrained model, kiểm soát bằng visibility matrix.</p><div class="role"><b>KG là đầu vào cho mô hình.</b> Nối threat action sang ATT&amp;CK và D3FEND.</div></article>
+      <article class="paper tilt rv"><div class="shine"></div><div class="code">P5</div><div class="venue">2025</div><h4>MITRE ATT&amp;CK Applications in Cybersecurity and The Way Forward</h4><span class="kpi">417 bài</span><p>Systematic review về ứng dụng và hạn chế của ATT&amp;CK.</p><div class="role"><b>ATT&amp;CK như ontology hành vi</b>, xương sống ngữ nghĩa cho KG.</div></article>
+      <article class="paper tilt rv"><div class="shine"></div><div class="code">P6</div><div class="venue">Journal of Network and Computer Applications 232 (2024)</div><h4>Evolving Techniques in Cyber Threat Hunting: A Systematic Review</h4><p>Hệ thống hóa ML có/không giám sát, reasoning, graph-based và rule-based trong threat hunting.</p><div class="role"><b>Graph-based là một nhánh của hunting.</b> Nêu rõ thách thức về dữ liệu và chuyên môn.</div></article>
+    </div>
+    <div class="chain rv" aria-label="Chuỗi tích hợp các nghiên cứu">
+      <span>P2 attack patterns</span><svg viewBox="0 0 28 14"><path d="M0 7h24M18 1l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <span>P3 chuẩn hóa ATT&amp;CK</span><svg viewBox="0 0 28 14"><path d="M0 7h24M18 1l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <span>P1 KG và link prediction</span><svg viewBox="0 0 28 14"><path d="M0 7h24M18 1l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <span>P4 KG làm tri thức nền, nối D3FEND</span>
+    </div>
+    <p class="note rv" style="margin-top:20px">P5 và P6 cung cấp bức tranh tổng quan. Không có một phương pháp tốt nhất cho toàn bộ bài toán, nên kiến trúc hợp lý là hybrid: tự động hóa xử lý khối lượng, KG và ATT&amp;CK tạo cấu trúc, analyst xác nhận các trường hợp khó.</p>
+  </div>
+</section>
+
+<!-- ================= APPS ================= -->
+<section class="sec" id="ung-dung" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="idx">Ứng dụng</div>
+      <h2 class="big">Đồ thị làm việc cho SOC</h2>
+    </div>
+    <div class="apps rv">
+      <div class="app"><h3>Detection</h3><p>So tập technique của các mối đe dọa liên quan với tập technique đã có rule để thấy khoảng trống phát hiện.</p></div>
+      <div class="app"><h3>Threat hunting</h3><p>Mỗi đường đi Actor → Malware → Technique → Data source trở thành một giả thuyết và một truy vấn trên telemetry.</p></div>
+      <div class="app"><h3>Incident response</h3><p>Từ một hash hay domain, duyệt tới malware, các kỹ thuật cần kiểm tra thêm, actor và chiến dịch liên quan.</p></div>
+      <div class="app"><h3>Liên kết chiến dịch</h3><p>Hạ tầng hoặc công cụ dùng chung gợi ý các sự kiện có liên quan. Đây là bằng chứng gián tiếp, cần chuyên gia đánh giá.</p></div>
+      <div class="app"><h3>Chiến lược</h3><p>Ưu tiên detection engineering, vá lỗ hổng, threat modeling và phân bổ nguồn lực.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GAPS ================= -->
+<section class="sec" id="thach-thuc" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="idx">Research gaps</div>
+      <h2 class="big">Nơi đồ thị còn gãy</h2>
+      <p class="lede">Đây không phải hạn chế của riêng một paper, mà là những vấn đề lặp lại giữa nhiều nguồn.</p>
+    </div>
+    <div class="gaps rv">
+      <div class="gap"><h4><svg viewBox="0 0 16 16"><path d="M2 8h4l2-5 2 10 2-5h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>Chất lượng và độ đầy đủ</h4><p>KG thiếu cạnh, không nhất quán hoặc chứa tri thức không liên quan.</p><div class="who">P4: knowledge noise</div></div>
+      <div class="gap"><h4><svg viewBox="0 0 16 16"><path d="M2 8h4l2-5 2 10 2-5h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>Tính cập nhật</h4><p>Malware, kỹ thuật và chính ATT&amp;CK liên tục thay đổi; KG không cập nhật sẽ lỗi thời.</p><div class="who">P3 retrain, P4 dynamic update, P6</div></div>
+      <div class="gap"><h4><svg viewBox="0 0 16 16"><path d="M2 8h4l2-5 2 10 2-5h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>Hợp nhất thực thể</h4><p>Bí danh tạo nút trùng; gộp nhầm thì trộn hai thực thể khác nhau.</p><div class="who">Bất đồng bộ giữa các nguồn</div></div>
+      <div class="gap"><h4><svg viewBox="0 0 16 16"><path d="M2 8h4l2-5 2 10 2-5h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>Lan truyền lỗi</h4><p>Sai ở NER, trích xuất quan hệ hay mapping đều thành cạnh sai, và link prediction có thể khuếch đại lỗi đó.</p><div class="who">Pipeline nhiều bước</div></div>
+      <div class="gap"><h4><svg viewBox="0 0 16 16"><path d="M2 8h4l2-5 2 10 2-5h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>Giới hạn schema</h4><p>Schema cố định giúp tự động hóa nhưng làm mất thông tin ngoài tập lớp định sẵn.</p><div class="who">Chuẩn hóa CTI</div></div>
+      <div class="gap"><h4><svg viewBox="0 0 16 16"><path d="M2 8h4l2-5 2 10 2-5h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>Độ tin cậy của LLM</h4><p>Triple bịa, vi phạm định dạng, lặp từ; cần kiểm định đầu ra và lưu provenance.</p><div class="who">P1</div></div>
+      <div class="gap"><h4><svg viewBox="0 0 16 16"><path d="M2 8h4l2-5 2 10 2-5h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>Khả năng mở rộng</h4><p>Xây KG bằng LLM và link prediction trên dữ liệu lớn vẫn còn khó; mapping lượng lớn log có thể gây nghẽn.</p><div class="who">P1, P5</div></div>
+      <div class="gap"><h4><svg viewBox="0 0 16 16"><path d="M2 8h4l2-5 2 10 2-5h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>Dữ liệu và benchmark</h4><p>Thiếu nhãn, mất cân bằng lớp, và thiếu benchmark công khai cho CTI KG.</p><div class="who">P3, P6</div></div>
+      <div class="gap"><h4><svg viewBox="0 0 16 16"><path d="M2 8h4l2-5 2 10 2-5h2" fill="none" stroke="currentColor" stroke-width="2"/></svg>Vai trò con người</h4><p>Độ chính xác trên benchmark chưa chứng minh giá trị vận hành; cần human-in-the-loop.</p><div class="who">P3, P4</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LOADER ================= -->
+<section class="sec" id="malware-loader" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="idx">Hướng nghiên cứu</div>
+      <h2 class="big">Loader-centric KG cho Windows Malware Loader</h2>
+      <p class="lede">Loader là <strong>mắt xích nối</strong> giai đoạn xâm nhập ban đầu với payload. Biến thể đổi hash, domain nhưng thường giữ lại hành vi. Đây là nơi đồ thị tỏa sáng: chuyển từ nhận diện theo hash sang hiểu hành vi.</p>
+      <p class="note">Đề xuất ở mức khái niệm, dựa trên nền tảng tổng hợp; các nghiên cứu nguồn chưa thực nghiệm trực tiếp trên Windows Malware Loader.</p>
+    </div>
+    <div class="ldr-grid">
+      <div class="ldr-svg rv">
+        <svg viewBox="0 0 560 470" role="img" aria-label="Sơ đồ loader-centric knowledge graph">
+          <path class="e" d="M110 70 Q 200 60 270 70"/><text class="el" x="190" y="56">attributed-to</text>
+          <path class="e" d="M110 80 Q 170 160 260 220"/><text class="el" x="150" y="160">uses</text>
+          <path class="e hl" d="M250 240 Q 170 250 100 245"/><text class="el" x="175" y="236" style="fill:var(--accent);font-weight:600">downloads</text>
+          <path class="e" d="M110 400 Q 180 320 260 255"/><text class="el" x="170" y="345">variant-of</text>
+          <path class="e" d="M280 260 Q 290 340 290 395"/><text class="el" x="320" y="340">communicates-with</text>
+          <path class="e" d="M295 225 Q 360 120 420 65"/><path class="e" d="M305 235 Q 400 200 470 185"/>
+          <path class="e" d="M305 250 Q 400 280 470 300"/><path class="e" d="M300 260 Q 360 360 420 410"/>
+          <text class="el" x="370" y="130">uses</text><text class="el" x="400" y="200">uses</text><text class="el" x="400" y="292">uses</text><text class="el" x="370" y="360">uses</text>
+          <path class="e" d="M500 120 Q 510 150 490 172" stroke-dasharray="4 4"/><text class="el" x="522" y="150">detects</text>
+          <g class="n"><circle cx="90" cy="70" r="16" style="stroke:var(--e-actor)"/><text x="90" y="104">Campaign C</text></g>
+          <g class="n"><circle cx="290" cy="60" r="14" style="stroke:var(--e-actor)"/><text x="290" y="34">Actor B</text></g>
+          <g class="n"><circle cx="280" cy="240" r="26" style="stroke:var(--e-mal)"/><text x="280" y="286">Loader L</text></g>
+          <g class="n"><circle cx="80" cy="245" r="17" style="stroke:var(--e-mal)"/><text x="80" y="280">Payload P</text></g>
+          <g class="n"><circle cx="90" cy="410" r="14" style="stroke:var(--e-mal)"/><text x="90" y="442">Loader L v2</text></g>
+          <g class="n"><circle cx="290" cy="410" r="13" style="stroke:var(--e-ioc)"/><text x="290" y="442">C2 domain</text></g>
+          <g class="n"><circle cx="430" cy="55" r="13" style="stroke:var(--e-tech)"/><text x="430" y="30">T1105</text></g>
+          <g class="n"><circle cx="485" cy="185" r="13" style="stroke:var(--e-tech)"/><text x="485" y="218">T1059.001</text></g>
+          <g class="n"><circle cx="485" cy="305" r="13" style="stroke:var(--e-tech)"/><text x="485" y="338">T1547.001</text></g>
+          <g class="n"><circle cx="430" cy="420" r="13" style="stroke:var(--e-tech)"/><text x="430" y="452">T1055</text></g>
+          <g class="n"><circle cx="500" cy="105" r="11" style="stroke:var(--e-def)"/><text x="500" y="84">Rule</text></g>
+        </svg>
+      </div>
+      <div class="rv">
+        <h3 style="margin-bottom:12px">Hành vi thường mô tả → ATT&amp;CK → telemetry</h3>
+        <div class="tablewrap"><table class="cmp">
+          <thead><tr><th>Hành vi</th><th>ATT&amp;CK</th><th>Telemetry gợi ý</th></tr></thead>
+          <tbody>
+            <tr><td>Tải payload từ xa</td><td>T1105</td><td>Proxy/DNS log, Sysmon ID 3</td></tr>
+            <tr><td>Chạy PowerShell</td><td>T1059.001</td><td>Script Block Logging 4104, Sysmon ID 1</td></tr>
+            <tr><td>Tiêm vào tiến trình</td><td>T1055</td><td>EDR, Sysmon ID 8 và 10</td></tr>
+            <tr><td>Làm rối / đóng gói</td><td>T1027</td><td>Phân tích tĩnh, entropy</td></tr>
+            <tr><td>Duy trì qua Run key</td><td>T1547.001</td><td>Sysmon ID 13</td></tr>
+            <tr><td>Né sandbox</td><td>T1497</td><td>Phân tích động</td></tr>
+            <tr><td>C2 qua HTTP(S)</td><td>T1071.001</td><td>Proxy log, network flow</td></tr>
+          </tbody></table></div>
+        <p class="note" style="margin-top:10px">Bảng minh họa ở mức khái niệm; cần xác minh với từng family cụ thể.</p>
+        <div class="hyp"><h4>Một đường đi, một giả thuyết</h4><p>Loader L uses T1547.001, downloads Payload P, communicates-with C2. Nếu L có mặt, telemetry sẽ cho thấy một tiến trình lạ kết nối ra ngoài, tải file, rồi tạo Run key trỏ tới file đó. Kiểm chứng bằng cách tương quan network log, Sysmon ID 3 và 13 trên cùng máy, cùng khung thời gian.</p></div>
+      </div>
+    </div>
+    <div class="two" style="margin-top:70px">
+      <div class="rv"><h3>Phạm vi khả thi cho đề tài</h3><p style="margin-top:10px">Không cố xây toàn bộ CTI KG, mà làm một chuỗi hẹp nhưng trọn vẹn, nằm đúng giao điểm của các gap được nhiều paper nêu ra.</p></div>
+      <ol class="scope rv">
+        <li><span><b>Dữ liệu</b>Tập báo cáo công khai về một số loader family trên Windows.</span></li>
+        <li><span><b>Trích xuất</b>Triple hành vi và ánh xạ ATT&amp;CK, so sánh LLM với mô hình phân loại.</span></li>
+        <li><span><b>Đồ thị</b>Loader-centric KG có provenance và điểm tin cậy.</span></li>
+        <li><span><b>Suy luận</b>Link prediction cho loader –uses→ technique, đánh giá bằng Hits@k.</span></li>
+        <li><span><b>Đánh giá</b>Sinh giả thuyết hunting và kiểm chứng cùng analyst.</span></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FINAL ================= -->
+<section class="final" id="ket-luan">
+  <div class="wrap">
+    <h2 class="rv">Giá trị của CTI<br><span class="o">nằm ở các cạnh.</span></h2>
+    <div class="concl">
+      <p class="rv">KG chuyển CTI từ <strong>danh sách chỉ số</strong> sang <strong>mạng quan hệ và hành vi</strong>. Nó vừa là sản phẩm của trích xuất tri thức (P1, P2), vừa là nguồn tri thức để cải thiện mô hình (P4), còn ATT&amp;CK là xương sống ngữ nghĩa (P3, P5).</p>
+      <p class="rv">Tự động hóa đã tiến xa: TTPMapper đạt 94.08%, K-CTIAA đạt F1 = 0.941. Dù vậy chất lượng KG, tính cập nhật, hợp nhất thực thể, độ tin cậy của LLM, khả năng mở rộng và vai trò con người vẫn là các gap có bằng chứng.</p>
+      <p class="rv">Với Windows Malware Loader: trích xuất hành vi, chuẩn hóa theo ATT&amp;CK, liên kết với payload, hạ tầng và actor, rồi biến thành giả thuyết hunting kiểm chứng được.</p>
+    </div>
+    <h3 class="rv" style="margin:70px 0 20px">Tài liệu tham khảo</h3>
+    <ul class="refs rv">
+      <li><b>P1</b>Fieblinger, Alam, Rastogi. “Actionable Cyber Threat Intelligence using Knowledge Graphs and Large Language Models.” Workshop on Attackers and Cyber-Crime Operations, 2024.</li>
+      <li><b>P2</b>Alam, Bhusal, Park, Rastogi. “Looking Beyond IoCs: Automatically Extracting Attack Patterns from External CTI.” RAID 2023.</li>
+      <li><b>P3</b>“TTPMapper: Accurate Mapping of TTPs from Unstructured CTI Reports.” IEEE Xplore.</li>
+      <li><b>P4</b>Li, Li, Liu, Liu, Zhou. “K-CTIAA: Automatic Analysis of Cyber Threat Intelligence Based on a Knowledge Graph.” Symmetry 2023, 15, 337. DOI 10.3390/sym15020337.</li>
+      <li><b>P5</b>Jiang, Meng, Shang, Oo, Minh, Lim, Sikdar. “MITRE ATT&amp;CK Applications in Cybersecurity and The Way Forward.” 2025.</li>
+      <li><b>P6</b>Mahboubi et al. “Evolving techniques in cyber threat hunting: A systematic review.” JNCA 232 (2024), 104004. DOI 10.1016/j.jnca.2024.104004.</li>
+      <li><b>R1</b>Hogan et al. “Knowledge Graphs.” ACM Computing Surveys 54(4), 2021.</li>
+      <li><b>R2</b>Bordes et al. “Translating Embeddings for Modeling Multi-relational Data.” NeurIPS 2013.</li>
+      <li><b>R3</b>OASIS. STIX Version 2.1, 2021. MITRE ATT&amp;CK (attack.mitre.org). MITRE D3FEND (d3fend.mitre.org).</li>
+    </ul>
+    <div class="author rv">
+      <div><span>Sinh viên</span><b>Tạ Quang Vinh</b></div>
+      <div><span>Lớp</span><b>IA2101</b></div>
+      <div><span>Giảng viên hướng dẫn</span><b>Hoàng Mạnh Đức</b></div>
+      <div><span>Đơn vị</span><b>Trường Đại học FPT, ngành An toàn thông tin</b></div>
+    </div>
+  </div>
+</section>
+</main>
+<div class="toast" id="motionToast" role="dialog" aria-label="Thông báo hiệu ứng">
+  <p>Máy của bạn đang bật chế độ <strong>giảm chuyển động</strong>, nên các hiệu ứng (chữ chạy, con trỏ ảo, đồ thị trôi) đang bị tắt.</p>
+  <div class="row"><button type="button" class="go" id="toastOn">Bật hiệu ứng</button><button type="button" id="toastKeep">Giữ nguyên</button></div>
+</div>
+<footer><div class="wrap"><span>Báo cáo thu hoạch cá nhân, Hà Nội 2026</span><a href="#hero" data-magnet>Về đầu trang</a></div></footer>
+
+<script>
+(function(){
+'use strict';
+const SYS_RM = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let storedMotion=null; try{storedMotion=localStorage.getItem('kgcti-motion');}catch(e){}
+let RM = storedMotion ? storedMotion==='reduce' : SYS_RM;
+document.documentElement.classList.toggle('rm',RM);
+function setMotion(reduce,save=true){
+  RM=reduce; document.documentElement.classList.toggle('rm',RM);
+  const b=document.getElementById('motionBtn'); b.setAttribute('aria-pressed',String(!RM)); b.querySelector('span').textContent='Hiệu ứng: '+(RM?'giảm':'bật');
+  if(save){try{localStorage.setItem('kgcti-motion',RM?'reduce':'full');}catch(e){}}
+  if(!RM && save){ document.getElementById('heroTitle').classList.add('go'); }
+  window.dispatchEvent(new Event('scroll'));
+}
+const FINE = window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+const root = document.documentElement;
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const css = n => getComputedStyle(root).getPropertyValue(n).trim();
+
+/* ---------- THEME ---------- */
+$('#themeBtn').addEventListener('click',()=>{
+  const dark = root.getAttribute('data-theme') ? root.getAttribute('data-theme')==='dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.setAttribute('data-theme', dark ? 'light' : 'dark');
+  try{localStorage.setItem('kgcti-theme', root.getAttribute('data-theme'));}catch(e){}
+  refreshColors();
+});
+try{const t=localStorage.getItem('kgcti-theme'); if(t) root.setAttribute('data-theme',t);}catch(e){}
+
+let COL={};
+function refreshColors(){
+  ['actor','mal','tech','ioc','vuln','target','tele','def'].forEach(k=>COL[k]=css('--e-'+k));
+  COL.ink=css('--ink');COL.ink2=css('--ink2');COL.mute=css('--mute');COL.bg=css('--bg');COL.line=css('--line2');COL.accent=css('--accent');COL.accent2=css('--accent2');COL.glow=+css('--glow');
+}
+refreshColors();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',refreshColors);
+
+/* ---------- AUDIO (Web Audio, synthesized) ---------- */
+let AC=null, soundOn=true;
+function ac(){ if(!AC){ try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){AC=null;} } if(AC&&AC.state==='suspended') AC.resume(); return AC; }
+function tone(freq,dur=.18,type='sine',vol=.12,when=0,slide=0){
+  if(!soundOn) return; const a=ac(); if(!a) return;
+  const t=a.currentTime+when, o=a.createOscillator(), g=a.createGain(), f=a.createBiquadFilter();
+  o.type=type; o.frequency.setValueAtTime(freq,t); if(slide) o.frequency.exponentialRampToValueAtTime(freq*slide,t+dur);
+  f.type='lowpass'; f.frequency.value=2600;
+  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.012); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(f).connect(g).connect(a.destination); o.start(t); o.stop(t+dur+.05);
+}
+const SND={
+  pivot:(i=0)=>{const base=[392,440,523.25,587.33,659.25,783.99][i%6]; tone(base,.16,'triangle',.11); tone(base*2,.12,'sine',.05,.03);},
+  select:()=>tone(880,.06,'sine',.05),
+  predict:()=>{[523.25,659.25,783.99,1046.5].forEach((f,i)=>tone(f,.35,'sine',.07,i*.07));tone(130.8,.6,'triangle',.06);},
+  ok:()=>{tone(659.25,.14,'triangle',.1);tone(987.77,.22,'triangle',.08,.08);},
+  bad:()=>{tone(180,.22,'square',.06,0,.7);tone(140,.25,'square',.05,.08,.7);},
+  done:()=>{[392,493.88,587.33,783.99].forEach((f,i)=>tone(f,.9,'sine',.07,i*.09));}
+};
+
+/* ---------- MOTION TOGGLE ---------- */
+setMotion(RM,false);
+$('#motionBtn').addEventListener('click',()=>setMotion(!RM));
+if(SYS_RM && !storedMotion){
+  setTimeout(()=>$('#motionToast').classList.add('show'),2600);
+}
+$('#toastOn').addEventListener('click',()=>{setMotion(false);$('#motionToast').classList.remove('show');});
+$('#toastKeep').addEventListener('click',()=>{setMotion(true);$('#motionToast').classList.remove('show');});
+
+/* ---------- LOADER ---------- */
+const trips=['(Actor B, uses, Malware A)','(Malware A, uses, T1105)','(update-cdn[.]example, indicates, Malware A)','(Adwind, isA, RAT)','(Loader L, downloads, Payload P)'];
+let pct=0, ti=0; const ldPct=$('#ldPct'), ldTrip=$('#ldTrip');
+const ldStart=performance.now(), LD_MIN=RM?200:1900;
+const tripTimer=setInterval(()=>{ldTrip.textContent=trips[ti++%trips.length];},380);
+function ldTick(now){
+  const p=Math.min(1,(now-ldStart)/LD_MIN); const eased=1-Math.pow(1-p,3);
+  pct=Math.round(eased*100); ldPct.textContent=pct+'%';
+  if(p<1) requestAnimationFrame(ldTick); else finishLoad();
+}
+requestAnimationFrame(ldTick);
+let loaded=false;
+function finishLoad(){
+  if(loaded) return; loaded=true; clearInterval(tripTimer); ldTrip.textContent='Đồ thị đã sẵn sàng';
+  setTimeout(()=>{ $('#pageLoader').classList.add('done'); $('#heroTitle').classList.add('go'); $('#hero').classList.add('ready');
+    setTimeout(()=>{$('#pageLoader').style.display='none';},1100); }, RM?0:250);
+}
+
+/* ---------- SPLIT TITLE ---------- */
+let ci=0;
+$$('[data-split]').forEach(el=>{
+  const txt=el.textContent; el.textContent='';
+  [...txt].forEach(ch=>{const s=document.createElement('span');s.className='ch';s.textContent=ch;s.style.setProperty('--i',ci++);s.setAttribute('aria-hidden','true');el.appendChild(s);});
+});
+
+/* ---------- CURSOR ---------- */
+if(FINE){
+  document.body.classList.add('has-cursor');
+  const dot=$('#curDot'), ring=$('#curRing'); let mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my;
+  addEventListener('pointermove',e=>{mx=e.clientX;my=e.clientY;dot.style.transform=`translate(${mx}px,${my}px) translate(-50%,-50%)`;},{passive:true});
+  (function loop(){rx+=(mx-rx)*.18;ry+=(my-ry)*.18;ring.style.transform=`translate(${rx}px,${ry}px) translate(-50%,-50%)`;requestAnimationFrame(loop);})();
+  document.addEventListener('pointerover',e=>{ if(e.target.closest('a,button,select,canvas#labCanvas,[data-magnet]')) ring.classList.add('hot'); });
+  document.addEventListener('pointerout',e=>{ if(e.target.closest('a,button,select,canvas#labCanvas,[data-magnet]')) ring.classList.remove('hot'); });
+}
+
+/* ---------- MAGNETIC ---------- */
+if(FINE){
+  $$('[data-magnet]').forEach(el=>{
+    el.addEventListener('pointermove',e=>{if(RM)return;const r=el.getBoundingClientRect();const x=e.clientX-(r.left+r.width/2),y=e.clientY-(r.top+r.height/2);
+      el.style.setProperty('--mx',(x*.28)+'px');el.style.setProperty('--my',(y*.38)+'px');
+      if(!el.classList.contains('btn')) el.style.transform=`translate(${x*.25}px,${y*.3}px)`;});
+    el.addEventListener('pointerleave',()=>{el.style.setProperty('--mx','0px');el.style.setProperty('--my','0px');if(!el.classList.contains('btn')) el.style.transform='';});
+  });
+}
+
+/* ---------- TILT ---------- */
+if(FINE){
+  $$('.tilt').forEach(el=>{
+    el.addEventListener('pointerenter',()=>{if(!RM)el.classList.add('active');});
+    el.addEventListener('pointermove',e=>{if(RM)return;const r=el.getBoundingClientRect();const px=(e.clientX-r.left)/r.width,py=(e.clientY-r.top)/r.height;
+      el.style.setProperty('--ry',((px-.5)*14)+'deg');el.style.setProperty('--rx',((.5-py)*12)+'deg');
+      el.style.setProperty('--gx',(px*100)+'%');el.style.setProperty('--gy',(py*100)+'%');});
+    el.addEventListener('pointerleave',()=>{el.classList.remove('active');el.style.setProperty('--rx','0deg');el.style.setProperty('--ry','0deg');});
+  });
+}
+
+/* ---------- MARQUEE ---------- */
+const m1=['Actor —uses→ Malware','Malware —uses→ T1105','domain —indicates→ Malware','Malware —exploits→ CVE','Loader —downloads→ Payload','Campaign —attributed-to→ Actor','Sample —variant-of→ Family'];
+const m2=['Collection','Normalization','Entity extraction','Relation extraction','Entity resolution','ATT&CK mapping','Link prediction','Threat hunting','Feedback'];
+function fill(id,arr){const el=document.getElementById(id);el.innerHTML=arr.concat(arr).map(t=>`<span>${t.replace(/&/g,'&amp;')}</span>`).join('');}
+fill('mq1',m1);fill('mq1b',m1);fill('mq2',m2);fill('mq2b',m2);
+
+/* ---------- MANIFESTO WORDS ---------- */
+const man=$('#manifesto'); const hlWords=new Set(['ai','cạnh','nối']);
+man.innerHTML=man.textContent.trim().split(/\s+/).map(w=>{const clean=w.replace(/[.,]/g,'').toLowerCase();return `<span class="w${hlWords.has(clean)?' hl':''}">${w}</span>`;}).join(' ');
+const words=[...man.querySelectorAll('.w')];
+
+/* ---------- COUNTERS ---------- */
+function countUp(el){
+  const target=parseFloat(el.dataset.count), dec=+(el.dataset.dec||0), pre=el.dataset.prefix||'', suf=el.dataset.suffix||'';
+  const fmt=v=>pre+v.toFixed(dec)+(suf?`<small>${suf}</small>`:'');
+  if(RM){el.innerHTML=fmt(target);return;}
+  const t0=performance.now(), D=1600;
+  (function step(now){const p=Math.min(1,(now-t0)/D),e=1-Math.pow(1-p,4);el.innerHTML=fmt(target*e);if(p<1)requestAnimationFrame(step);})(t0);
+}
+
+/* ---------- REVEAL OBSERVER ---------- */
+const io=new IntersectionObserver(es=>es.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('in'); const n=en.target.querySelector('[data-count]'); if(n&&!n.dataset.done){n.dataset.done=1;countUp(n);} io.unobserve(en.target);} }),{threshold:.15});
+$$('.rv').forEach(el=>io.observe(el));
+
+/* ---------- SCROLL-DRIVEN ---------- */
+const top=$('#top'), prog=$('#progress'), hz=$('#quy-trinh'), hzTrack=$('#hzTrack'), hzBar=$('#hzBar'), hzCount=$('#hzCount'), hzSteps=$$('#hzTrack .step');
+function onScroll(){
+  const y=scrollY, max=document.documentElement.scrollHeight-innerHeight;
+  prog.style.transform=`scaleX(${max>0?y/max:0})`;
+  top.classList.toggle('scrolled',y>40);
+  // manifesto
+  const r=man.getBoundingClientRect(); const start=innerHeight*.85, end=innerHeight*.25;
+  const p=Math.max(0,Math.min(1,(start-r.top)/((start-end)+r.height*.6)));
+  const lit=Math.floor(p*words.length*1.05);
+  words.forEach((w,i)=>w.style.opacity = RM?1:(i<lit?1:.14));
+  // horizontal
+  const hr=hz.getBoundingClientRect(); const total=hz.offsetHeight-innerHeight;
+  const hp=Math.max(0,Math.min(1,-hr.top/total));
+  const maxX=hzTrack.scrollWidth-innerWidth;
+  hzTrack.style.transform=`translate3d(${-hp*Math.max(0,maxX)}px,0,0)`;
+  hzBar.style.transform=`scaleX(${hp})`;
+  const sIdx=Math.min(8,Math.floor(hp*9));
+  hzCount.textContent=String(sIdx+1).padStart(2,'0');
+  hzSteps.forEach((st,i)=>{st.classList.toggle('on',i===sIdx);st.classList.toggle('past',i<sIdx);});
+}
+addEventListener('scroll',onScroll,{passive:true}); addEventListener('resize',onScroll); onScroll();
+
+/* ---------- STORY ---------- */
+const sv=$('#storyVis');
+const sio=new IntersectionObserver(es=>es.forEach(en=>{ if(en.isIntersecting){ $$('.story-steps .st').forEach(s=>s.classList.remove('on')); en.target.classList.add('on'); sv.dataset.s=en.target.dataset.step; } }),{rootMargin:'-45% 0px -45% 0px'});
+$$('.story-steps .st').forEach(s=>sio.observe(s));
+
+/* ---------- METHODS TABS ---------- */
+const METHODS={
+  rule:{ex:'TTPDrill, AttackKG',pro:'Nhanh, dễ giải thích; hiệu quả với IoC dạng chuỗi cố định như IP, hash.',con:'Không hiểu ngữ cảnh, tỷ lệ false positive cao, không nhận ra mẫu tấn công mới.'},
+  ml:{ex:'BERT, CyBERT; TTPClassifier trong LADDER (P2); TTPMapper (P3)',pro:'Phân loại câu rồi trích xuất và ánh xạ; hiểu ngữ cảnh và nhận diện mẫu mới tốt hơn template.',con:'Cần dữ liệu gán nhãn; nhạy với mất cân bằng lớp.'},
+  llm:{ex:'Llama 2, Mistral 7B, Zephyr với few-shot prompting và instruction tuning (P1)',pro:'Đọc hiểu văn bản phức tạp, xuất trực tiếp [Entity₁, Relation, Entity₂] theo schema.',con:'Ảo giác, vi phạm định dạng, lặp từ; tốn tài nguyên và khó mở rộng. Cần kiểm định đầu ra.'}
+};
+const mPanel=$('#mPanel');
+function showM(k){const m=METHODS[k];mPanel.innerHTML=`<div><h4>Ví dụ trong nghiên cứu</h4><p>${m.ex}</p></div><div><h4>Điểm mạnh</h4><p>${m.pro}</p></div><div><h4>Hạn chế</h4><p>${m.con}</p></div>`;
+  $$('.m-tabs button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.m===k)));}
+$$('.m-tabs button').forEach(b=>b.addEventListener('click',()=>{showM(b.dataset.m);SND.select();}));
+showM('rule');
+
+/* ---------- TRIPLE BUILDER ---------- */
+const ENT=[['Actor B','actor'],['Malware A','malware'],['Adwind','malware'],['RAT','class'],['T1105','technique'],['CVE-2023-xxxx','vuln'],['update-cdn[.]example','indicator'],['Ngành tài chính','target'],['Windows','target'],['Malware A2','malware'],['Actor B′','actor']];
+const REL={
+  uses:{d:['actor','malware'],r:['malware','technique'],hint:'Actor hoặc Malware dùng Malware hoặc Technique.'},
+  targets:{d:['actor','malware'],r:['target'],hint:'Actor hoặc Malware nhắm vào tổ chức, ngành hoặc hệ điều hành.'},
+  exploits:{d:['malware'],r:['vuln'],hint:'Malware khai thác một Vulnerability.'},
+  indicates:{d:['indicator'],r:['malware','actor'],hint:'Indicator là dấu hiệu của Malware hoặc Actor.'},
+  isA:{d:['malware'],r:['class'],hint:'Malware thuộc một loại (RAT, ransomware, loader…).'},
+  variantOf:{d:['malware'],r:['malware'],hint:'Malware là biến thể của một Malware khác.'},
+  hasAlias:{d:['actor','malware'],r:['actor','malware'],same:true,hint:'Hai tên của cùng một loại thực thể.'}
+};
+const TYPE_VN={actor:'Threat Actor',malware:'Malware',class:'Lớp malware',technique:'Technique',vuln:'Vulnerability',indicator:'Indicator',target:'Mục tiêu'};
+const bH=$('#bH'),bR=$('#bR'),bT=$('#bT');
+ENT.forEach(([n],i)=>{bH.add(new Option(n,i));bT.add(new Option(n,i));});
+Object.keys(REL).forEach(r=>bR.add(new Option(r,r)));
+bH.value=0;bR.value='uses';bT.value=1;
+const built=new Set();
+$('#bGo').addEventListener('click',()=>{
+  const h=ENT[bH.value],t=ENT[bT.value],r=bR.value,rule=REL[r],out=$('#bOut');
+  let ok=rule.d.includes(h[1])&&rule.r.includes(t[1]); let why='';
+  if(bH.value===bT.value){ok=false;why='Head và tail đang là cùng một thực thể.';}
+  else if(rule.same && h[1]!==t[1]){ok=false;why='hasAlias chỉ nối hai thực thể cùng lớp.';}
+  else if(!ok) why=`“${r}” không hợp lệ từ ${TYPE_VN[h[1]]} tới ${TYPE_VN[t[1]]}. Quy tắc: ${rule.hint}`;
+  if(ok){
+    out.className='verdict ok'; out.innerHTML=`<b>Hợp lệ theo schema</b>(${h[0]}, ${r}, ${t[0]}): ${TYPE_VN[h[1]]} → ${TYPE_VN[t[1]]}.`;
+    const key=h[0]+r+t[0]; if(!built.has(key)){built.add(key);const s=document.createElement('span');s.className='t';s.textContent=`(${h[0]}, ${r}, ${t[0]})`;$('#bGraph').appendChild(s);}
+    SND.ok();
+  } else { out.className='verdict bad'; out.innerHTML=`<b>Schema từ chối triple này</b>${why}`; SND.bad(); }
+});
+
+/* ---------- HERO CANVAS ---------- */
+(function(){
+  const cv=$('#heroCanvas'), cx=cv.getContext('2d'); let W,H,D,pts=[]; const mouse={x:-9999,y:-9999,active:false};
+  const types=['actor','mal','tech','ioc','vuln','tech','ioc','mal'];
+  function size(){D=Math.min(2,devicePixelRatio||1);W=cv.clientWidth;H=cv.clientHeight;cv.width=W*D;cv.height=H*D;cx.setTransform(D,0,0,D,0,0);
+    const n=Math.round(Math.min(110,Math.max(40,W*H/16000)));
+    pts=Array.from({length:n},(_,i)=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*2.4+1.6,t:types[i%types.length]}));}
+  size(); addEventListener('resize',size);
+  const hero=$('#hero');
+  let lastMove=0;
+  hero.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;const r=cv.getBoundingClientRect();mouse.x=e.clientX-r.left;mouse.y=e.clientY-r.top;mouse.active=true;lastMove=performance.now();});
+  hero.addEventListener('pointerleave',()=>{mouse.active=false;mouse.x=mouse.y=-9999;});
+  // ghost analyst cursor: wanders on its own when the real mouse is idle
+  const ghost={x:0,y:0,vx:0,vy:0,tx:0,ty:0,ripples:[],next:0,init:false};
+  function pickTarget(){const wide=W>820; ghost.tx=W*(wide?.42+Math.random()*.52:.08+Math.random()*.84); ghost.ty=H*(.14+Math.random()*.7);}
+  function stepGhost(now){
+    if(!ghost.init){ghost.x=W*.85;ghost.y=H*.3;pickTarget();ghost.init=true;}
+    ghost.vx+=(ghost.tx-ghost.x)*.0022; ghost.vy+=(ghost.ty-ghost.y)*.0022; ghost.vx*=.93; ghost.vy*=.93;
+    ghost.x+=ghost.vx; ghost.y+=ghost.vy;
+    if(Math.hypot(ghost.tx-ghost.x,ghost.ty-ghost.y)<26 && now>ghost.next){
+      ghost.ripples.push({x:ghost.x,y:ghost.y,t:now});
+      for(const p of pts){const d=Math.hypot(p.x-ghost.x,p.y-ghost.y); if(d<170&&d>1){p.vx+=(p.x-ghost.x)/d*.9;p.vy+=(p.y-ghost.y)/d*.9;}}
+      ghost.next=now+900; setTimeout(pickTarget,500);
+    }
+  }
+  function drawArrow(x,y,label){
+    cx.save(); cx.translate(x,y); cx.globalAlpha=1;
+    cx.beginPath(); cx.moveTo(0,0); cx.lineTo(0,19); cx.lineTo(5,14.5); cx.lineTo(8.6,22); cx.lineTo(11.6,20.6); cx.lineTo(8.2,13.4); cx.lineTo(14.5,13.4); cx.closePath();
+    cx.fillStyle=COL.ink; cx.strokeStyle=COL.bg; cx.lineWidth=1.6; cx.fill(); cx.stroke();
+    cx.font="600 12px 'Be Vietnam Pro',system-ui,sans-serif"; const w=cx.measureText(label).width+16;
+    cx.fillStyle=COL.accent; cx.beginPath(); if(cx.roundRect) cx.roundRect(16,22,w,22,11); else cx.rect(16,22,w,22); cx.fill();
+    cx.fillStyle=COL.bg; cx.textBaseline='middle'; cx.textAlign='left'; cx.fillText(label,24,33.5);
+    cx.restore();
+  }
+  let visible=true; new IntersectionObserver(e=>visible=e[0].isIntersecting).observe(hero);
+  function frame(now){
+    if(visible){
+      cx.clearRect(0,0,W,H);
+      const LINK=120, MR=190;
+      if(mouse.active && now-lastMove>2500) mouse.active=false;
+      const useGhost=!mouse.active && !RM;
+      if(useGhost) stepGhost(now);
+      const P = mouse.active ? mouse : (useGhost ? {x:ghost.x,y:ghost.y,active:true} : {x:-9999,y:-9999,active:false});
+      for(const p of pts){ p.vx*=.995; p.vy*=.995; const sp=Math.hypot(p.vx,p.vy); if(sp<.12){p.vx+=(Math.random()-.5)*.05;p.vy+=(Math.random()-.5)*.05;} }
+      for(const p of pts){
+        if(!RM){p.x+=p.vx;p.y+=p.vy;}
+        if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1;
+        if(P.active){const dx=P.x-p.x,dy=P.y-p.y,d=Math.hypot(dx,dy);
+          if(d<MR&&d>1){const f=(1-d/MR); p.x+=dx/d*f*1.6; p.y+=dy/d*f*1.6; if(d<40){p.x-=dx/d*2.5;p.y-=dy/d*2.5;}}}
+      }
+      for(let i=0;i<pts.length;i++){const a=pts[i];
+        for(let j=i+1;j<pts.length;j++){const b=pts[j];const d=Math.hypot(a.x-b.x,a.y-b.y);
+          if(d<LINK){cx.globalAlpha=(1-d/LINK)*.35;cx.strokeStyle=COL.line;cx.lineWidth=1;cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(b.x,b.y);cx.stroke();}}
+        if(P.active){const d=Math.hypot(a.x-P.x,a.y-P.y); if(d<MR){cx.globalAlpha=(1-d/MR)*.9;cx.strokeStyle=COL[a.t];cx.lineWidth=1.3;cx.beginPath();cx.moveTo(a.x,a.y);cx.lineTo(P.x,P.y);cx.stroke();}}
+      }
+      for(const p of pts){const near=P.active?Math.max(0,1-Math.hypot(p.x-P.x,p.y-P.y)/MR):0;
+        cx.globalAlpha=.55+near*.45; cx.fillStyle=COL[p.t];
+        if(COL.glow){cx.shadowColor=COL[p.t];cx.shadowBlur=8+near*14;}
+        cx.beginPath();cx.arc(p.x,p.y,p.r+near*3,0,Math.PI*2);cx.fill(); cx.shadowBlur=0;}
+      if(P.active && !useGhost){cx.globalAlpha=1;cx.strokeStyle=COL.accent;cx.lineWidth=1.5;cx.beginPath();cx.arc(P.x,P.y,10,0,Math.PI*2);cx.stroke();}
+      ghost.ripples=ghost.ripples.filter(r=>now-r.t<1100);
+      for(const r of ghost.ripples){const k=(now-r.t)/1100;cx.globalAlpha=(1-k)*.8;cx.strokeStyle=COL.accent;cx.lineWidth=2;cx.beginPath();cx.arc(r.x,r.y,10+k*90,0,Math.PI*2);cx.stroke();}
+      if(useGhost) drawArrow(ghost.x,ghost.y,'analyst ảo');
+      cx.globalAlpha=1;
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+
+/* ---------- LAB: investigation graph ---------- */
+(function(){
+  const N={
+    alert:{l:'update-cdn[.]example',t:'ioc',info:'Domain xuất hiện trong proxy log của một máy trạm. Đây là điểm xuất phát của cuộc điều tra.',a:{Nguồn:'Proxy log nội bộ','Độ tin cậy':'Quan sát trực tiếp'}},
+    loader:{l:'Loader L',t:'mal',info:'Loader được threat report mô tả là dùng domain này để tải payload. Pivot tiếp để xem hành vi và payload.',a:{Lớp:'Malware (loader)',Nguồn:'Threat report R1'}},
+    sample:{l:'SHA256 a3f9…e21',t:'ioc',info:'Hash của một mẫu loader trong sandbox. Dễ thay đổi giữa các biến thể (đáy Pyramid of Pain).',a:{Lớp:'Indicator',Nguồn:'Sandbox'}},
+    payload:{l:'Payload P',t:'mal',info:'Payload cuối cùng mà loader tải về.',a:{Lớp:'Malware',Nguồn:'Threat report R1'}},
+    c2b:{l:'dl-files[.]example',t:'ioc',info:'Domain thứ hai loader liên lạc. Có thể đưa vào truy vấn DNS/proxy toàn tổ chức.',a:{Lớp:'Infrastructure',Nguồn:'Sandbox'}},
+    camp:{l:'Campaign C',t:'actor',info:'Chiến dịch trong đó loader được sử dụng.',a:{Lớp:'Campaign',Nguồn:'Threat report R2'}},
+    actor:{l:'Actor B',t:'actor',info:'Nhóm tấn công được quy kết cho chiến dịch. Quy kết là bằng chứng gián tiếp, cần đánh giá.',a:{Lớp:'Threat Actor',Nguồn:'Threat report R2'}},
+    alias:{l:'Actor B′',t:'actor',info:'Tên gọi khác của Actor B do một hãng khác đặt. Cần hợp nhất thực thể để tránh nút trùng.',a:{'Quan hệ':'hasAlias'}},
+    malA:{l:'Malware A',t:'mal',info:'Một công cụ khác Actor B sử dụng. Gợi ý các technique mà loader có thể chưa được ghi nhận.',a:{Lớp:'Malware',Nguồn:'Threat report R3'}},
+    cve:{l:'CVE-2023-xxxx',t:'vuln',info:'Lỗ hổng mà Malware A khai thác. Liên kết sang CVE/NVD để làm giàu.',a:{Lớp:'Vulnerability'}},
+    org:{l:'Ngành tài chính',t:'target',info:'Ngành mục tiêu của chiến dịch. Hữu ích cho đánh giá rủi ro chiến lược.',a:{Lớp:'Organization'}},
+    t1105:{l:'T1105 Ingress Tool Transfer',t:'tech',info:'Tải công cụ hoặc payload từ bên ngoài vào hệ thống.',a:{Tactic:'Command and Control'}},
+    t1059:{l:'T1059.001 PowerShell',t:'tech',info:'Thực thi lệnh bằng PowerShell.',a:{Tactic:'Execution'}},
+    t1547:{l:'T1547.001 Run Keys',t:'tech',info:'Duy trì bằng Registry Run Keys / Startup Folder.',a:{Tactic:'Persistence, Privilege Escalation'}},
+    t1071:{l:'T1071.001 Web Protocols',t:'tech',info:'Liên lạc C2 qua HTTP(S).',a:{Tactic:'Command and Control'}},
+    t1055:{l:'T1055 Process Injection',t:'tech',info:'Tiêm mã vào tiến trình khác.',a:{Tactic:'Defense Evasion, Privilege Escalation'}},
+    d_proxy:{l:'Proxy / DNS log',t:'tele',info:'Nguồn dữ liệu để săn tìm hoạt động tải file và C2.',a:{Loại:'Telemetry'}},
+    d_4104:{l:'Script Block Logging 4104',t:'tele',info:'Ghi lại nội dung khối script PowerShell được thực thi.',a:{Loại:'Telemetry'}},
+    d_s13:{l:'Sysmon ID 13',t:'tele',info:'Sự kiện đặt giá trị registry, dùng để phát hiện Run key mới.',a:{Loại:'Telemetry'}},
+    d_s8:{l:'Sysmon ID 8 / 10',t:'tele',info:'CreateRemoteThread và ProcessAccess, dấu hiệu của tiêm mã.',a:{Loại:'Telemetry'}}
+  };
+  const E=[
+    ['alert','loader','indicates'],['sample','loader','indicates'],['loader','payload','downloads'],['loader','c2b','communicates-with'],
+    ['loader','t1105','uses'],['loader','t1059','uses'],['loader','t1547','uses'],['camp','loader','uses'],
+    ['payload','t1071','uses'],['camp','actor','attributed-to'],['camp','org','targets'],['actor','alias','hasAlias'],['actor','malA','uses'],
+    ['malA','t1055','uses'],['malA','cve','exploits'],
+    ['t1105','d_proxy','quan sát qua'],['t1071','d_proxy','quan sát qua'],['t1059','d_4104','quan sát qua'],['t1547','d_s13','quan sát qua'],['t1055','d_s8','quan sát qua']
+  ];
+  const PRED=[['loader','t1055','uses?','Loader L → T1055: Actor B dùng cả Loader L (qua Campaign C) lẫn Malware A, mà Malware A dùng T1055.'],
+              ['actor','t1105','uses?','Actor B → T1105: Actor B gắn với Campaign C, chiến dịch dùng Loader L, mà Loader L dùng T1105.']];
+  const HYP={
+    t1105:['Tải payload từ xa (T1105)','Tìm tiến trình bất thường tải file thực thi từ domain mới đăng ký; đối chiếu Proxy/DNS log và Sysmon ID 3.'],
+    t1059:['PowerShell của loader (T1059.001)','Truy vấn Script Block Logging 4104 tìm lệnh tải xuống hoặc chuỗi bị mã hóa, chạy ngay sau khi kết nối tới update-cdn[.]example.'],
+    t1547:['Duy trì qua Run key (T1547.001)','Tìm Sysmon ID 13 tạo giá trị Run key trỏ tới file vừa được tải về trên cùng máy, cùng khung thời gian.'],
+    t1071:['C2 qua HTTP(S) (T1071.001)','Tìm kết nối HTTP(S) định kỳ tới dl-files[.]example hoặc domain tương tự từ nhiều máy trạm.'],
+    t1055:['Tiêm mã (T1055)','Tìm Sysmon ID 8/10 với tiến trình nguồn là file mới xuất hiện. Đây là giả thuyết từ Malware A, cần phân tích động để kiểm chứng.']
+  };
+  const typeName={ioc:'Indicator',mal:'Malware',tech:'Technique',actor:'Actor / Campaign',vuln:'Vulnerability',target:'Mục tiêu',tele:'Telemetry'};
+  const cv=$('#labCanvas'), cx=cv.getContext('2d'), stage=$('#labStage');
+  let W,H,D; const nodes={}, edges=[]; let sel='alert', drag=null, hover=null, predicted=false, doneShown=false;
+  const total=Object.keys(N).length;
+  function size(){D=Math.min(2,devicePixelRatio||1);W=stage.clientWidth;H=stage.clientHeight;cv.width=W*D;cv.height=H*D;cx.setTransform(D,0,0,D,0,0);}
+  new ResizeObserver(size).observe(stage); size();
+  function addNode(id,from){
+    if(nodes[id]) return false;
+    const f=from?nodes[from]:{x:W/2,y:H/2};
+    nodes[id]={id,x:f.x+(Math.random()-.5)*40,y:f.y+(Math.random()-.5)*40,vx:0,vy:0,born:performance.now()};
+    return true;
+  }
+  function addEdge(a,b,l,pred=false){ if(!edges.some(e=>e.a===a&&e.b===b)) edges.push({a,b,l,pred,born:performance.now()}); }
+  function log(s){const el=$('#labLog');const d=document.createElement('div');d.textContent=s;el.prepend(d);}
+  function reset(){
+    for(const k in nodes) delete nodes[k]; edges.length=0; predicted=false; doneShown=false; $('#labDone').classList.remove('show');
+    addNode('alert'); nodes.alert.x=W*.5; nodes.alert.y=H*.5; sel='alert'; $('#labLog').innerHTML='';
+    $('#hyps').innerHTML='<li class="empty">Pivot tới các nút technique để đồ thị tự sinh giả thuyết.</li>';
+    log('MATCH (n {name:"update-cdn[.]example"}) RETURN n'); inspect(); update();
+  }
+  function neighbors(id){return E.filter(e=>e[0]===id||e[1]===id);}
+  function expand(id){
+    let added=0;
+    neighbors(id).forEach(([a,b,l])=>{const other=a===id?b:a; if(addNode(other,id)) added++; addEdge(a,b,l);});
+    if(added){SND.pivot(Object.keys(nodes).length); log(`MATCH (n {id:"${id}"})-[r]-(m) RETURN r, m  // +${added} nút`); addHyps();}
+    else { SND.select(); log(`// ${N[id].l}: không còn hàng xóm mới`); }
+    update();
+  }
+  function addHyps(){
+    const ul=$('#hyps');
+    Object.keys(HYP).forEach(k=>{ if(nodes[k] && !ul.querySelector(`[data-h="${k}"]`)){ const em=ul.querySelector('.empty'); if(em) em.remove();
+      const li=document.createElement('li'); li.dataset.h=k; li.innerHTML=`<b>${HYP[k][0]}</b>${HYP[k][1]}`; ul.prepend(li);} });
+  }
+  function predict(){
+    if(predicted) return; predicted=true;
+    PRED.forEach(([a,b,l,why])=>{ if(nodes[a]){ addNode(b,a); addEdge(a,b,l,true); log(`// link prediction: ${why}`);} });
+    SND.predict(); addHyps(); update();
+  }
+  function update(){
+    const n=Object.keys(nodes).length;
+    $('#labProg').textContent=`${n} / ${total} nút`;
+    $('#labPredict').disabled = predicted || !(nodes.loader && (nodes.actor||nodes.malA));
+    $('#labPredict').title = $('#labPredict').disabled && !predicted ? 'Cần khám phá Loader L và Actor B trước' : '';
+    if(n===total && !doneShown){doneShown=true;$('#labDone').classList.add('show');SND.done();setTimeout(()=>$('#labDone').classList.remove('show'),6000);}
+    inspect();
+  }
+  function inspect(){
+    const d=N[sel], el=$('#inspect'); if(!d) return;
+    const deg=neighbors(sel).length, open=neighbors(sel).filter(([a,b])=>!nodes[a===sel?b:a]).length;
+    el.innerHTML=`<span class="type"><i style="background:${COL[d.t]||COL.tele}"></i>${typeName[d.t]}</span><h3>${d.l}</h3><p>${d.info}</p>
+      <dl>${Object.entries(d.a).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')}<dt>Hàng xóm</dt><dd>${deg} (${open} chưa mở)</dd></dl>`;
+    $('#labExpand').textContent = open? `Pivot từ “${d.l.length>22?d.l.slice(0,21)+'…':d.l}”` : 'Nút này đã mở hết';
+  }
+  $('#labExpand').addEventListener('click',()=>expand(sel));
+  $('#labPredict').addEventListener('click',predict);
+  $('#labReset').addEventListener('click',()=>{reset();SND.select();});
+  $('#labSound').addEventListener('click',e=>{soundOn=!soundOn;e.currentTarget.setAttribute('aria-pressed',String(soundOn));e.currentTarget.textContent='Âm thanh: '+(soundOn?'bật':'tắt'); if(soundOn) SND.select();});
+  function pick(x,y){let best=null,bd=26;for(const k in nodes){const n=nodes[k];const d=Math.hypot(n.x-x,n.y-y);if(d<bd){bd=d;best=k;}}return best;}
+  let downAt=null;
+  cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect();const x=e.clientX-r.left,y=e.clientY-r.top;const k=pick(x,y);
+    downAt={x,y,k,t:performance.now()}; if(k){drag=k;cv.setPointerCapture(e.pointerId);}});
+  cv.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();const x=e.clientX-r.left,y=e.clientY-r.top;
+    hover=pick(x,y); if(drag){nodes[drag].x=x;nodes[drag].y=y;nodes[drag].vx=nodes[drag].vy=0;}});
+  cv.addEventListener('pointerup',e=>{const r=cv.getBoundingClientRect();const x=e.clientX-r.left,y=e.clientY-r.top;
+    if(downAt&&downAt.k&&Math.hypot(x-downAt.x,y-downAt.y)<6){ if(sel===downAt.k) expand(sel); else {sel=downAt.k;SND.select();inspect();} }
+    drag=null;downAt=null;});
+  cv.addEventListener('dblclick',e=>{const r=cv.getBoundingClientRect();const k=pick(e.clientX-r.left,e.clientY-r.top);if(k){sel=k;expand(k);}});
+  let visible=false; new IntersectionObserver(e=>visible=e[0].isIntersecting).observe(stage);
+  function sim(){
+    const ids=Object.keys(nodes); const cxm=W/2, cym=H/2+10;
+    for(let i=0;i<ids.length;i++){const a=nodes[ids[i]];
+      for(let j=i+1;j<ids.length;j++){const b=nodes[ids[j]];let dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy+.01;const d=Math.sqrt(d2);
+        const f=Math.min(6,4200/d2); a.vx+=dx/d*f;a.vy+=dy/d*f;b.vx-=dx/d*f;b.vy-=dy/d*f;}
+      a.vx+=(cxm-a.x)*.0016; a.vy+=(cym-a.y)*.0022;}
+    for(const e of edges){const a=nodes[e.a],b=nodes[e.b];if(!a||!b)continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1;
+      const L=e.pred?150:Math.max(100,Math.min(160,W/6)); const f=(d-L)*.012; a.vx+=dx/d*f;a.vy+=dy/d*f;b.vx-=dx/d*f;b.vy-=dy/d*f;}
+    for(const k of ids){const n=nodes[k]; if(k===drag) continue; n.vx*=.82;n.vy*=.82; n.x+=n.vx;n.y+=n.vy;
+      n.x=Math.max(40,Math.min(W-40,n.x)); n.y=Math.max(80,Math.min(H-90,n.y));}
+  }
+  function draw(t){
+    if(visible){
+      for(let i=0;i<(RM?6:2);i++) sim();
+      cx.clearRect(0,0,W,H);
+      // grid
+      cx.globalAlpha=.5; cx.fillStyle=COL.line; for(let x=20;x<W;x+=28) for(let y=20;y<H;y+=28){cx.fillRect(x,y,1,1);} cx.globalAlpha=1;
+      cx.font="500 11px 'Be Vietnam Pro',system-ui,sans-serif"; cx.textAlign='center'; cx.textBaseline='middle';
+      for(const e of edges){const a=nodes[e.a],b=nodes[e.b];if(!a||!b)continue;
+        const age=Math.min(1,(t-e.born)/600); const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,ux=dx/d,uy=dy/d;
+        const sx=a.x+ux*16,sy=a.y+uy*16, ex=a.x+ux*16+(dx-ux*34)*age, ey=a.y+uy*16+(dy-uy*34)*age;
+        const hl = sel===e.a||sel===e.b;
+        cx.strokeStyle=e.pred?COL.vuln:(hl?COL.accent:COL.line); cx.lineWidth=e.pred?2.2:(hl?2:1.3);
+        if(e.pred){cx.setLineDash([7,6]); cx.lineDashOffset=RM?0:-t*.03;} 
+        cx.beginPath();cx.moveTo(sx,sy);cx.lineTo(ex,ey);cx.stroke();cx.setLineDash([]);
+        if(age===1){cx.fillStyle=cx.strokeStyle;cx.beginPath();cx.moveTo(ex,ey);cx.lineTo(ex-ux*8-uy*4,ey-uy*8+ux*4);cx.lineTo(ex-ux*8+uy*4,ey-uy*8-ux*4);cx.fill();
+          if(hl||e.pred){const mx=(sx+ex)/2,my=(sy+ey)/2;const w=cx.measureText(e.l).width+10;cx.fillStyle=COL.bg;cx.fillRect(mx-w/2,my-8,w,16);cx.fillStyle=e.pred?COL.vuln:COL.ink2;cx.fillText(e.l,mx,my);}}
+      }
+      for(const k in nodes){const n=nodes[k],d=N[k];const age=Math.min(1,(t-n.born)/450);const col=COL[d.t]||COL.tele;
+        const r=(k==='loader'||k==='alert'?13:10)*(RM?1:(.4+.6*age)) + (hover===k?2:0);
+        const open=neighbors(k).some(([a,b])=>!nodes[a===k?b:a]);
+        if(COL.glow){cx.shadowColor=col;cx.shadowBlur=k===sel?24:12;}
+        cx.fillStyle=COL.bg;cx.beginPath();cx.arc(n.x,n.y,r+4,0,Math.PI*2);cx.fill();
+        cx.strokeStyle=col;cx.lineWidth=2.5;cx.stroke();cx.shadowBlur=0;
+        cx.fillStyle=col;cx.beginPath();cx.arc(n.x,n.y,r-1,0,Math.PI*2);cx.fill();
+        if(open){cx.strokeStyle=col;cx.globalAlpha=RM?.6:(.35+.35*Math.sin(t*.005));cx.lineWidth=1.5;cx.beginPath();cx.arc(n.x,n.y,r+10,0,Math.PI*2);cx.stroke();cx.globalAlpha=1;}
+        if(k===sel){cx.strokeStyle=COL.ink;cx.lineWidth=1.5;cx.setLineDash([3,4]);cx.beginPath();cx.arc(n.x,n.y,r+16,0,Math.PI*2);cx.stroke();cx.setLineDash([]);}
+        cx.font=(k===sel?"700 13px":"600 12px")+" 'Be Vietnam Pro',system-ui,sans-serif";
+        const w=cx.measureText(d.l).width+10; cx.globalAlpha=.85; cx.fillStyle=COL.bg; cx.fillRect(n.x-w/2,n.y+r+8,w,18); cx.globalAlpha=1;
+        cx.fillStyle=COL.ink; cx.fillText(d.l,n.x,n.y+r+17);
+      }
+      drawGhost(t);
+      // first-time hint
+      if(Object.keys(nodes).length===1){cx.fillStyle=COL.mute;cx.font="500 14px 'Be Vietnam Pro',system-ui,sans-serif";cx.fillText((W<520?'Chạm nút đang chọn để mở rộng':'Nhấp vào nút đang chọn (hoặc nút Pivot) để mở rộng'),W/2,H/2+70);}
+    }
+    requestAnimationFrame(draw);
+  }
+  /* ---- guide + automated demo with a ghost cursor ---- */
+  const guide=$('#labGuide');
+  const ghost={x:0,y:0,on:false,click:-9999};
+  let demoRun=0;
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  const frameP=()=>new Promise(r=>requestAnimationFrame(r));
+  function stopDemo(){ if(ghost.on){demoRun++;ghost.on=false;$('#labDemo').textContent='▶ Demo tự động';} }
+  async function glide(getXY,run,D=850){
+    const sx=ghost.x,sy=ghost.y,t0=performance.now();
+    for(;;){ if(run!==demoRun) throw 'stop';
+      const [x,y]=getXY(); const p=Math.min(1,(performance.now()-t0)/D), e=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+      ghost.x=sx+(x-sx)*e; ghost.y=sy+(y-sy)*e; if(p>=1) break; await frameP(); }
+  }
+  async function tapNode(id,run){
+    if(!nodes[id]) return;
+    await glide(()=>[nodes[id].x,nodes[id].y],run);
+    ghost.click=performance.now();
+    if(sel===id) expand(id); else {sel=id; SND.select(); inspect();}
+    await sleep(650);
+  }
+  async function tapBtn(btn,run){
+    const b=btn.getBoundingClientRect(), s=cv.getBoundingClientRect();
+    await glide(()=>[b.left-s.left+b.width/2,b.top-s.top+b.height/2],run);
+    ghost.click=performance.now(); btn.click(); await sleep(900);
+  }
+  async function demo(){
+    guide.hidden=true; reset(); const run=++demoRun;
+    ghost.x=W*.82; ghost.y=H*.78; ghost.on=true; $('#labDemo').textContent='■ Dừng demo';
+    log('// Demo tự động: analyst ảo bắt đầu điều tra');
+    try{
+      await sleep(500);
+      const plan=[['alert'],['loader',1],['camp',1],['actor',1],['malA',1],['payload',1],['t1059',1],['t1547',1],['t1105',1],['t1055',1],['t1071',1],['sample'],['c2b']];
+      for(const [id,twice] of plan){
+        if(id==='malA'){ await tapBtn($('#labPredict'),run); await sleep(900); }
+        await tapNode(id,run); if(twice) { await tapNode(id,run); await sleep(500); }
+      }
+      // open any remaining nodes
+      for(let guard=0;guard<12;guard++){
+        const left=Object.keys(nodes).find(k=>neighbors(k).some(([a,b])=>!nodes[a===k?b:a])); if(!left) break;
+        await tapNode(left,run); await tapNode(left,run);
+      }
+      log('// Demo kết thúc. Bấm “Làm lại” để tự điều tra.');
+    }catch(e){}
+    if(run===demoRun){ghost.on=false;$('#labDemo').textContent='▶ Demo tự động';}
+  }
+  $('#labDemo').addEventListener('click',()=>{ if(ghost.on) stopDemo(); else demo(); });
+  $('#guideDemo').addEventListener('click',demo);
+  $('#guideStart').addEventListener('click',()=>{guide.hidden=true; stage.focus({preventScroll:true});});
+  $('#labHelp').addEventListener('click',()=>{stopDemo();guide.hidden=false;});
+  // a real click on the graph or a toolbar button (other than Demo) hands control back to the user
+  stage.addEventListener('pointerdown',e=>{ if(!e.target.closest('#labDemo')) stopDemo(); },true);
+  function drawGhost(t){
+    if(!ghost.on) return;
+    const k=(t-ghost.click)/600;
+    if(k>=0&&k<1){cx.globalAlpha=1-k;cx.strokeStyle=COL.accent;cx.lineWidth=2.5;cx.beginPath();cx.arc(ghost.x,ghost.y,8+k*34,0,Math.PI*2);cx.stroke();cx.globalAlpha=1;}
+    cx.save(); cx.translate(ghost.x,ghost.y);
+    cx.beginPath(); cx.moveTo(0,0); cx.lineTo(0,19); cx.lineTo(5,14.5); cx.lineTo(8.6,22); cx.lineTo(11.6,20.6); cx.lineTo(8.2,13.4); cx.lineTo(14.5,13.4); cx.closePath();
+    cx.fillStyle=COL.ink; cx.strokeStyle=COL.bg; cx.lineWidth=1.6; cx.fill(); cx.stroke();
+    cx.font="600 12px 'Be Vietnam Pro',system-ui,sans-serif"; const w=cx.measureText('analyst ảo').width+16;
+    cx.fillStyle=COL.accent; cx.beginPath(); if(cx.roundRect) cx.roundRect(16,22,w,22,11); else cx.rect(16,22,w,22); cx.fill();
+    cx.fillStyle=COL.bg; cx.textAlign='left'; cx.textBaseline='middle'; cx.fillText('analyst ảo',24,33.5); cx.restore();
+    cx.textAlign='center';
+  }
+  reset(); requestAnimationFrame(draw);
+  // keyboard access: canvas not focusable; toolbar buttons + inspect cover it. Add keyboard cycling:
+  stage.tabIndex=0; stage.setAttribute('aria-label','Đồ thị điều tra. Phím mũi tên trái/phải để chọn nút, Enter để pivot.');
+  stage.addEventListener('keydown',e=>{const ids=Object.keys(nodes);let i=ids.indexOf(sel);
+    if(e.key==='ArrowRight'){sel=ids[(i+1)%ids.length];inspect();SND.select();e.preventDefault();}
+    else if(e.key==='ArrowLeft'){sel=ids[(i-1+ids.length)%ids.length];inspect();SND.select();e.preventDefault();}
+    else if(e.key==='Enter'){expand(sel);e.preventDefault();}});
+})();
+
+})();
+</script>
+</body>
+</html>
